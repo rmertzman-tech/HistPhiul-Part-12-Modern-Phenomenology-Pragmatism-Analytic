@@ -62,7 +62,8 @@
         proficient: { text: "✓ Proficient", cls: "bg-green-100 text-green-800" },
         developing: { text: "🔄 Developing", cls: "bg-yellow-100 text-yellow-800" },
         novice: { text: "⭕ Novice", cls: "bg-red-100 text-red-800" },
-        "not-started": { text: "⭕ Not Started", cls: "bg-gray-100 text-gray-700" }
+        "not-started": { text: "⭕ Not Started", cls: "bg-gray-100 text-gray-700" },
+        "in-progress": { text: "… In Progress", cls: "bg-indigo-100 text-indigo-800" }
       };
       return map[level] ?? map["not-started"];
     };
@@ -156,18 +157,15 @@
       const [session, setSession] = useState({ id: "", startedAt: "", completedAt: "" });
 
       const [progress, setProgress] = useState(() => {
-        // per-section status and simple metrics
         const base = {};
         SECTIONS.forEach(s => base[s.id] = { status: "not-started", startedAt: null, endedAt: null, minutes: 0, interactions: 0 });
         return base;
       });
 
-      // Phenomenology / Pragmatism / Analytic / Mind practice text
       const [notes, setNotes] = useState({
         pheno: "", prag: "", analytic: "", mind: ""
       });
 
-      // Studio fields
       const [studio, setStudio] = useState({
         claim: "",
         auditAmbiguities: "",
@@ -182,7 +180,6 @@
         abcdReflection: ""
       });
 
-      // Quiz state
       const [answers, setAnswers] = useState({});
       const [quizSubmitted, setQuizSubmitted] = useState(false);
       const [quizScore, setQuizScore] = useState(0);
@@ -381,7 +378,9 @@
           {/* Content */}
           <main className="max-w-7xl mx-auto px-4 py-8">
             {current === "intro" && (
-              <Intro onNext={() => { markDone("intro","proficient"); goto("phenomenology"); }} />
+              <Intro
+                onNext={() => { markDone("intro","proficient"); goto("phenomenology"); }}
+              />
             )}
 
             {current === "phenomenology" && (
@@ -611,6 +610,39 @@ ${studio.abcdReflection}
                 </button>
               </form>
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* NEW: The missing Intro component that caused the blank page */
+    function Intro({ onNext }) {
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Introduction — What This Part Trains</h2>
+          <div className="rounded-lg border p-4 bg-indigo-50 border-indigo-200 mb-4">
+            <p className="text-gray-800 mb-3">
+              Part 12 introduces three 20th-century toolkits as <em>capabilities</em> for inquiry:
+              <strong> phenomenology</strong> (disciplined description of experience),
+              <strong> pragmatism</strong> (problem–hypothesis–tool cycles), and
+              <strong> analytic philosophy</strong> (concept audits & conceptual engineering),
+              plus a quick pass through <strong>language & mind</strong> modeling for testable predictions.
+            </p>
+            <ul className="list-disc list-inside text-gray-800">
+              <li><strong>Agency (A):</strong> situated, trained attention and iteration.</li>
+              <li><strong>Beauty/Awe (B):</strong> elegance of clarified arguments and neat experimental designs.</li>
+              <li><strong>Context (C):</strong> forms of life, labs, and classrooms that scaffold skill.</li>
+              <li><strong>Dynamics (D):</strong> cycles of problem → hypothesis → test → revision.</li>
+            </ul>
+          </div>
+          <p className="text-gray-700">
+            You’ll progress through short practices, then build a <em>Claim → Workflow</em> that turns a philosophical
+            claim into a testable inquiry with KPIs. When you’re ready, click continue.
+          </p>
+          <div className="mt-4 flex justify-end">
+            <button onClick={onNext} className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+              Continue to Phenomenology →
+            </button>
           </div>
         </div>
       );
