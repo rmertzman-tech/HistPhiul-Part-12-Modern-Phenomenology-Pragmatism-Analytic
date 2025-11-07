@@ -1,847 +1,780 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Part 12 — 20th-Century Turns: Phenomenology • Pragmatism • Analytic • Language & Mind</title>
+  <meta charset="utf-8" />
+  <title>Part 12 — Phenomenology • Pragmatism • Analytic (Workshop)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- React UMD + Babel -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Tailwind (runtime) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Inter font (optional) -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
-    .gradient-header { background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #0ea5e9 100%); }
-    .progress-bar { transition: width .3s ease; }
-    @media print {
-      body * { visibility: hidden; }
-      #printable, #printable * { visibility: visible; }
-      #printable { position: absolute; left: 0; top: 0; width: 100%; }
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+    html,body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
+    .fade-in { animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from {opacity:0; transform: translateY(6px)} to {opacity:1; transform: translateY(0)} }
   </style>
 </head>
 <body class="bg-gray-50">
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useMemo } = React;
 
-    // ---------- Utilities ----------
-    const STORAGE_KEY = "part12_progress_v1";
-
-    const generateSessionId = () => {
-      const d = new Date();
-      const pad = (n) => String(n).padStart(2, "0");
-      return [
-        "P12",
-        d.getFullYear(),
-        pad(d.getMonth()+1),
-        pad(d.getDate()),
-        "-",
-        pad(d.getHours()),
-        pad(d.getMinutes()),
-        pad(d.getSeconds()),
-        "-",
-        Math.random().toString(36).slice(2, 8).toUpperCase()
-      ].join("");
-    };
-
-    const masteryFromPercent = (pct) => {
-      if (pct >= 90) return "mastered";
-      if (pct >= 80) return "proficient";
-      if (pct >= 60) return "developing";
-      return "novice";
-    };
-
-    const masteryBadge = (level) => {
-      const map = {
-        mastered: { text: "⭐ Mastered", cls: "bg-blue-100 text-blue-800" },
-        proficient: { text: "✓ Proficient", cls: "bg-green-100 text-green-800" },
-        developing: { text: "🔄 Developing", cls: "bg-yellow-100 text-yellow-800" },
-        novice: { text: "⭕ Novice", cls: "bg-red-100 text-red-800" },
-        "not-started": { text: "⭕ Not Started", cls: "bg-gray-100 text-gray-700" },
-        "in-progress": { text: "… In Progress", cls: "bg-indigo-100 text-indigo-800" }
+    /************ Reusable Components ************/
+    function Badge({children, tone="indigo"}) {
+      const tones = {
+        indigo: "bg-indigo-100 text-indigo-800",
+        green: "bg-green-100 text-green-800",
+        blue: "bg-blue-100 text-blue-800",
+        purple: "bg-purple-100 text-purple-800",
+        yellow: "bg-yellow-100 text-yellow-800",
+        red: "bg-red-100 text-red-800",
+        gray: "bg-gray-100 text-gray-800"
       };
-      return map[level] ?? map["not-started"];
-    };
+      return <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${tones[tone]||tones.indigo}`}>{children}</span>
+    }
 
-    // ---------- Content Data ----------
-    const SECTIONS = [
-      { id: "intro", label: "Introduction", icon: "📚" },
-      { id: "phenomenology", label: "Phenomenology", icon: "🔎" },
-      { id: "pragmatism", label: "Pragmatism", icon: "🛠️" },
-      { id: "analytic", label: "Analytic / Language", icon: "🧠" },
-      { id: "mind", label: "Language & Mind", icon: "🗣️" },
-      { id: "studio", label: "Claim → Workflow Studio", icon: "🏗️" },
-      { id: "assessment", label: "Assessment", icon: "✅" },
-      { id: "completion", label: "Completion Doc", icon: "📄" }
-    ];
-
-    const QUIZ = [
-      {
-        id: "q1",
-        prompt: "Phenomenology’s epoché primarily trains which capability?",
-        options: [
-          { id: "A", text: "Inventing new theories" },
-          { id: "B", text: "Bracketing assumptions to describe what is given", correct: true },
-          { id: "C", text: "Measuring behavioral consequences" },
-          { id: "D", text: "Formal proof construction" }
-        ],
-        explanation: "Epoché suspends presuppositions to describe the structures of experience."
-      },
-      {
-        id: "q2",
-        prompt: "Pragmatism’s definition of meaning focuses on:",
-        options: [
-          { id: "A", text: "The elegance of a proof" },
-          { id: "B", text: "The antiquity of a concept" },
-          { id: "C", text: "The practical bearings and consequences in inquiry", correct: true },
-          { id: "D", text: "The speaker’s intentions only" }
-        ],
-        explanation: "For pragmatists, meaning = practical consequences and use in inquiry."
-      },
-      {
-        id: "q3",
-        prompt: "Analytic philosophy’s ‘concept audit’ aims to:",
-        options: [
-          { id: "A", text: "Add more metaphors" },
-          { id: "B", text: "Uncover ambiguities and define decision rules", correct: true },
-          { id: "C", text: "Ignore ordinary language" },
-          { id: "D", text: "Replace experiments with introspection" }
-        ],
-        explanation: "Analytic methods clarify usage, surface ambiguities, and specify operational criteria."
-      },
-      {
-        id: "q4",
-        prompt: "In the ABCD lens, Beauty/Awe (B) matters because it:",
-        options: [
-          { id: "A", text: "Is merely decorative" },
-          { id: "B", text: "Creates salience and future-pull, making control layers visible", correct: true },
-          { id: "C", text: "Only applies to art" },
-          { id: "D", text: "Prevents disciplined reasoning" }
-        ],
-        explanation: "Beauty/Awe directs attention and motivates sustained engagement."
-      },
-      {
-        id: "q5",
-        prompt: "A ‘constructor’ in this module is best described as:",
-        options: [
-          { id: "A", text: "Any single person with expertise" },
-          { id: "B", text: "A system that repeatedly produces a transformation and maintains that ability", correct: true },
-          { id: "C", text: "A list of rules" },
-          { id: "D", text: "A one-off project" }
-        ],
-        explanation: "Constructors repeatedly yield reliable outcomes and preserve the capacity to do so."
-      },
-      {
-        id: "q6",
-        prompt: "The ‘Claim → Workflow Studio’ primarily operationalizes which tradition?",
-        options: [
-          { id: "A", text: "Only phenomenology" },
-          { id: "B", text: "Only analytic philosophy" },
-          { id: "C", text: "Only philosophy of mind" },
-          { id: "D", text: "A synthesis: concept audit + phenomenology + pragmatic testing", correct: true }
-        ],
-        explanation: "The studio integrates the three toolkits into a testable workflow."
-      }
-    ];
-
-    // ---------- App ----------
-    function App() {
-      const [hasStarted, setHasStarted] = useState(false);
-      const [student, setStudent] = useState({ name: "", email: "", course: "" });
-      const [current, setCurrent] = useState("intro");
-      const [session, setSession] = useState({ id: "", startedAt: "", completedAt: "" });
-
-      const [progress, setProgress] = useState(() => {
-        const base = {};
-        SECTIONS.forEach(s => base[s.id] = { status: "not-started", startedAt: null, endedAt: null, minutes: 0, interactions: 0 });
-        return base;
-      });
-
-      const [notes, setNotes] = useState({
-        pheno: "", prag: "", analytic: "", mind: ""
-      });
-
-      const [studio, setStudio] = useState({
-        claim: "",
-        auditAmbiguities: "",
-        workingDefs: "",
-        phenoNote: "",
-        hypothesis: "",
-        consequences: "",
-        intervention: "",
-        ethics: "",
-        kpis: "",
-        pilotNotes: "",
-        abcdReflection: ""
-      });
-
-      const [answers, setAnswers] = useState({});
-      const [quizSubmitted, setQuizSubmitted] = useState(false);
-      const [quizScore, setQuizScore] = useState(0);
-
-      // Load saved
-      useEffect(() => {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        try {
-          const saved = JSON.parse(raw);
-          if (saved) {
-            setHasStarted(!!saved.hasStarted);
-            setStudent(saved.student || { name: "", email: "", course: "" });
-            setCurrent(saved.current || "intro");
-            setSession(saved.session || { id: "", startedAt: "", completedAt: "" });
-            setProgress(saved.progress || progress);
-            setNotes(saved.notes || { pheno: "", prag: "", analytic: "", mind: "" });
-            setStudio(saved.studio || studio);
-            setAnswers(saved.answers || {});
-            setQuizSubmitted(!!saved.quizSubmitted);
-            setQuizScore(saved.quizScore || 0);
-          }
-        } catch (e) {}
-        // eslint-disable-next-line
-      }, []);
-
-      // Save
-      useEffect(() => {
-        const payload = { hasStarted, student, current, session, progress, notes, studio, answers, quizSubmitted, quizScore };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      }, [hasStarted, student, current, session, progress, notes, studio, answers, quizSubmitted, quizScore]);
-
-      // Helpers
-      const begin = (info) => {
-        const id = generateSessionId();
-        const now = new Date().toISOString();
-        setStudent(info);
-        setHasStarted(true);
-        setSession({ id, startedAt: now, completedAt: "" });
-        markStarted("intro");
-      };
-
-      const markStarted = (sec) => {
-        setProgress(prev => {
-          const p = { ...prev };
-          if (p[sec].status === "not-started") {
-            p[sec].status = "in-progress";
-            p[sec].startedAt = new Date().toISOString();
-          }
-          p[sec].interactions += 1;
-          return p;
-        });
-      };
-
-      const markDone = (sec, level="proficient") => {
-        setProgress(prev => {
-          const p = { ...prev };
-          const start = p[sec].startedAt ? new Date(p[sec].startedAt) : new Date();
-          const end = new Date();
-          const mins = Math.max(1, Math.round((end - start)/60000));
-          p[sec].endedAt = end.toISOString();
-          p[sec].minutes += mins;
-          p[sec].status = level;
-          return p;
-        });
-      };
-
-      const goto = (sec) => {
-        setCurrent(sec);
-        markStarted(sec);
-      };
-
-      const resetAll = () => {
-        if (!confirm("This will clear all saved progress for Part 12. Continue?")) return;
-        localStorage.removeItem(STORAGE_KEY);
-        window.location.reload();
-      };
-
-      const calcCourseProgress = () => {
-        const total = SECTIONS.length;
-        const done = Object.values(progress).filter(p => ["proficient","mastered","developing"].includes(p.status)).length;
-        return Math.round((done/total)*100);
-      };
-
-      const submitQuiz = () => {
-        let correct = 0;
-        QUIZ.forEach(q => {
-          const right = q.options.find(o => o.correct)?.id;
-          if (answers[q.id] === right) correct += 1;
-        });
-        const pct = Math.round((correct / QUIZ.length) * 100);
-        setQuizScore(pct);
-        setQuizSubmitted(true);
-        markDone("assessment", masteryFromPercent(pct));
-        setSession(s => ({ ...s, completedAt: new Date().toISOString() }));
-      };
-
-      const completionText = () => {
-        const pct = calcCourseProgress();
-        const mastery = masteryFromPercent(quizScore || 0);
-        const lines = [];
-        lines.push("═══════════════════════════════════════════════════════");
-        lines.push("PART 12: 20th-Century Turns — Completion Document");
-        lines.push("═══════════════════════════════════════════════════════");
-        lines.push(`Student: ${student.name}  •  ${student.email}  •  ${student.course}`);
-        lines.push(`Session: ${session.id}`);
-        lines.push(`Started: ${session.startedAt}`);
-        lines.push(`Completed: ${session.completedAt || "(in progress)"}`);
-        lines.push("");
-        lines.push(`Course Progress: ${pct}%`);
-        lines.push(`Assessment Score: ${quizScore}%  →  Mastery: ${mastery.toUpperCase()}`);
-        lines.push("");
-        lines.push("Section Status:");
-        SECTIONS.forEach(s => {
-          const st = progress[s.id];
-          lines.push(` - ${s.label}: ${st.status} (${st.minutes} min, interactions: ${st.interactions})`);
-        });
-        lines.push("");
-        lines.push("Studio Summary:");
-        lines.push(`  Claim: ${studio.claim}`);
-        lines.push(`  Working Definitions: ${studio.workingDefs}`);
-        lines.push(`  Hypothesis: ${studio.hypothesis}`);
-        lines.push(`  Consequences: ${studio.consequences}`);
-        lines.push(`  Intervention: ${studio.intervention}`);
-        lines.push(`  Ethics: ${studio.ethics}`);
-        lines.push(`  KPIs: ${studio.kpis}`);
-        lines.push(`  Pilot Notes: ${studio.pilotNotes}`);
-        lines.push(`  ABCD Reflection: ${studio.abcdReflection}`);
-        lines.push("");
-        lines.push("This document was auto-generated by the Part 12 web module.");
-        return lines.join("\n");
-      };
-
-      const downloadCompletion = () => {
-        const blob = new Blob([completionText()], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Part12-Completion-${(student.name||"student").replace(/\s+/g,"_")}.txt`;
-        a.click();
-      };
-
-      // ---------- UI ----------
-      if (!hasStarted) return (
-        <Welcome onBegin={begin} />
-      );
-
-      const pct = calcCourseProgress();
-
+    function SectionCard({title, subtitle, children, icon="📘"}) {
       return (
-        <div className="min-h-screen">
-          {/* Header */}
-          <header className="gradient-header text-white">
-            <div className="max-w-7xl mx-auto px-4 py-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-3xl font-extrabold">Part 12 — 20th-Century Turns</h1>
-                  <p className="text-white/90">Phenomenology • Pragmatism • Analytic • Language & Mind</p>
-                  <div className="mt-4 bg-white/20 rounded-full h-2 overflow-hidden">
-                    <div className="progress-bar bg-white h-full" style={{ width: pct + "%" }}></div>
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 fade-in">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">{icon}</span>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+                {subtitle && <p className="text-gray-600">{subtitle}</p>}
+              </div>
+            </div>
+          </div>
+          {children}
+        </div>
+      )
+    }
+
+    function MicroPrimer({ title, items=[], children }) {
+      const [open, setOpen] = useState(false);
+      return (
+        <div className="mt-5 border border-gray-200 rounded-lg overflow-hidden">
+          <button onClick={()=>setOpen(o=>!o)} className="w-full flex items-center justify-between px-4 py-3 bg-indigo-50 hover:bg-indigo-100">
+            <span className="font-semibold text-indigo-900">Essentials: {title}</span>
+            <span className="text-indigo-700">{open ? "▼" : "▶"}</span>
+          </button>
+          {open && (
+            <div className="p-4 space-y-4 bg-white">
+              {items.map((it,i)=>(
+                <div key={i} className="bg-gray-50 p-4 rounded border border-gray-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-sm text-gray-500">{it.term}</div>
+                    <Badge tone="gray">{it.tag||"primer"}</Badge>
                   </div>
-                  <p className="text-sm mt-2 text-white/90">{pct}% complete</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={resetAll} className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                    Reset
-                  </button>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          {/* Nav */}
-          <nav className="bg-white shadow-sm sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="flex overflow-x-auto py-3 gap-2">
-                {SECTIONS.map(sec => {
-                  const st = progress[sec.id]?.status || "not-started";
-                  const badge = masteryBadge(st);
-                  const isCurrent = current === sec.id;
-                  return (
-                    <button key={sec.id} onClick={() => goto(sec.id)}
-                      className={"px-4 py-2 rounded-lg border text-sm flex items-center gap-2 whitespace-nowrap " +
-                        (isCurrent ? "bg-indigo-50 border-indigo-300 text-indigo-800"
-                                   : "hover:bg-gray-50 border-gray-200 text-gray-700")}>
-                      <span>{sec.icon}</span>
-                      <span>{sec.label}</span>
-                      <span className={"px-2 py-0.5 rounded-full " + badge.cls}>{badge.text}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </nav>
-
-          {/* Content */}
-          <main className="max-w-7xl mx-auto px-4 py-8">
-            {current === "intro" && (
-              <Intro
-                onNext={() => { markDone("intro","proficient"); goto("phenomenology"); }}
-              />
-            )}
-
-            {current === "phenomenology" && (
-              <Panel
-                title="I. Phenomenology — Back to the Things Themselves"
-                color="blue"
-                body={
-                  <>
-                    <p className="text-gray-700 mb-4">
-                      Phenomenology trains disciplined description of experience: <strong>epoché</strong> (bracketing),
-                      <strong> intentionality</strong> (aboutness), embodiment, and the lifeworld.
-                      Describe structures as they show themselves—before theorizing.
-                    </p>
-                    <ul className="list-disc list-inside text-gray-700 mb-4">
-                      <li><strong>Capacity:</strong> attentional awareness.</li>
-                      <li><strong>Capability:</strong> field-notes that track figure/ground, affordances, anticipations.</li>
-                      <li><strong>Constructor:</strong> studio routines that repeatedly yield faithful descriptions.</li>
-                      <li><strong>Meta-constructor:</strong> peer critique that improves descriptive norms.</li>
-                    </ul>
-                    <p className="text-gray-700">
-                      <strong>Mini-practice:</strong> Observe a mug for 2 minutes. Write 150–200 words on
-                      figure/ground, affordances, anticipations. No theory terms—just structures.
-                    </p>
-                  </>
-                }
-                noteValue={notes.pheno}
-                onNoteChange={(v) => setNotes(n => ({...n, pheno: v}))}
-                onComplete={() => { markDone("phenomenology", "proficient"); goto("pragmatism"); }}
-              />
-            )}
-
-            {current === "pragmatism" && (
-              <Panel
-                title="II. Pragmatism — Inquiry as Problem-Solving"
-                color="green"
-                body={
-                  <>
-                    <p className="text-gray-700 mb-4">
-                      Pragmatism treats ideas as tools. Frame a problem, form a hypothesis,
-                      specify consequences, run a small intervention, and iterate.
-                    </p>
-                    <ul className="list-disc list-inside text-gray-700 mb-4">
-                      <li><strong>Capacity:</strong> adaptive experimentation.</li>
-                      <li><strong>Capability:</strong> hypothesis-to-test mapping.</li>
-                      <li><strong>Constructor:</strong> lab/classroom cycles that produce reliable improvements.</li>
-                      <li><strong>Meta-constructor:</strong> communities of inquiry that refine standards.</li>
-                    </ul>
-                    <p className="text-gray-700">
-                      <strong>Mini-practice:</strong> Convert “Office hours don’t help” into
-                      Problem → Hypothesis → Consequence tests → Small intervention.
-                    </p>
-                  </>
-                }
-                noteValue={notes.prag}
-                onNoteChange={(v) => setNotes(n => ({...n, prag: v}))}
-                onComplete={() => { markDone("pragmatism", "proficient"); goto("analytic"); }}
-              />
-            )}
-
-            {current === "analytic" && (
-              <Panel
-                title="III. Analytic Philosophy — Language, Logic, Conceptual Engineering"
-                color="purple"
-                body={
-                  <>
-                    <p className="text-gray-700 mb-4">
-                      Make meanings explicit: conduct a <strong>concept audit</strong>, define terms operationally,
-                      and sketch models. Use ordinary-language sensitivity or formal tools to prevent confusion.
-                    </p>
-                    <ul className="list-disc list-inside text-gray-700 mb-4">
-                      <li>Uncover ambiguities and hidden presuppositions.</li>
-                      <li>Specify decision rules that would settle a dispute.</li>
-                      <li>Use counterexamples to stress-test a claim.</li>
-                    </ul>
-                    <p className="text-gray-700">
-                      <strong>Mini-practice:</strong> Take “Free speech is absolute.” Provide 3 disambiguations of
-                      “absolute,” 2 test cases, then a revised claim with explicit scope and decision rule.
-                    </p>
-                  </>
-                }
-                noteValue={notes.analytic}
-                onNoteChange={(v) => setNotes(n => ({...n, analytic: v}))}
-                onComplete={() => { markDone("analytic", "proficient"); goto("mind"); }}
-              />
-            )}
-
-            {current === "mind" && (
-              <Panel
-                title="IV. Language & Mind — Roles, Models, Context"
-                color="indigo"
-                body={
-                  <>
-                    <p className="text-gray-700 mb-4">
-                      From behaviorism to functionalism to enactive hints: model mental states by the roles they play
-                      in input–state–output systems, while attending to context and embodiment.
-                    </p>
-                    <ul className="list-disc list-inside text-gray-700 mb-4">
-                      <li>Box-and-arrow modeling (belief/desire → predicted behavior).</li>
-                      <li>Context switches as tests (sleep deprivation, group study).</li>
-                      <li>Use mispredictions to refine the model.</li>
-                    </ul>
-                    <p className="text-gray-700">
-                      <strong>Mini-practice:</strong> Model “Student intends to pass the course.” Add two context
-                      switches and predict behavior changes.
-                    </p>
-                  </>
-                }
-                noteValue={notes.mind}
-                onNoteChange={(v) => setNotes(n => ({...n, mind: v}))}
-                onComplete={() => { markDone("mind", "proficient"); goto("studio"); }}
-              />
-            )}
-
-            {current === "studio" && (
-              <Studio
-                value={studio}
-                onChange={setStudio}
-                onComplete={() => { markDone("studio","mastered"); goto("assessment"); }}
-                onDownloadPlan={() => {
-                  const txt =
-`Claim → Workflow (Part 12)
-
-Claim:
-${studio.claim}
-
-Concept Audit — Ambiguities:
-${studio.auditAmbiguities}
-
-Working Definitions:
-${studio.workingDefs}
-
-Phenomenology Field-Note:
-${studio.phenoNote}
-
-Hypothesis:
-${studio.hypothesis}
-
-Observable Consequences:
-${studio.consequences}
-
-Intervention Plan:
-${studio.intervention}
-
-Ethics & Context Check:
-${studio.ethics}
-
-KPIs:
-${studio.kpis}
-
-Pilot Notes:
-${studio.pilotNotes}
-
-ABCD Reflection:
-${studio.abcdReflection}
-`;
-                  const blob = new Blob([txt], { type: "text/plain" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "Part12-Claim-to-Workflow.txt";
-                  a.click();
-                }}
-              />
-            )}
-
-            {current === "assessment" && (
-              <Assessment
-                quiz={QUIZ}
-                answers={answers}
-                onAnswer={(qid, optId) => setAnswers(prev => ({ ...prev, [qid]: optId }))}
-                onSubmit={submitQuiz}
-                submitted={quizSubmitted}
-                score={quizScore}
-                onNext={() => goto("completion")}
-              />
-            )}
-
-            {current === "completion" && (
-              <Completion
-                student={student}
-                session={session}
-                progress={progress}
-                score={quizScore}
-                onDownload={downloadCompletion}
-                docText={completionText()}
-              />
-            )}
-          </main>
-        </div>
-      );
-    }
-
-    // ---------- Components ----------
-    function Welcome({ onBegin }) {
-      const [form, setForm] = useState({ name: "", email: "", course: "" });
-      const ready = form.name && form.email && form.course;
-      return (
-        <div className="min-h-screen gradient-header text-white">
-          <div className="max-w-3xl mx-auto px-4 py-12">
-            <div className="bg-white/10 backdrop-blur rounded-2xl p-8 shadow-xl">
-              <h1 className="text-3xl font-extrabold mb-2">Part 12 — 20th-Century Turns</h1>
-              <p className="text-white/90 mb-6">Phenomenology • Pragmatism • Analytic • Language & Mind</p>
-              <div className="bg-white rounded-xl text-gray-800 p-6">
-                <h2 className="text-xl font-bold mb-3">Orientation</h2>
-                <p className="mb-3">This module treats three families of practice as toolkits:
-                  <strong> phenomenology</strong> (disciplined description),
-                  <strong> pragmatism</strong> (inquiry cycles), and
-                  <strong> analytic philosophy</strong> (conceptual engineering),
-                  plus <strong>language & mind</strong> modeling.
-                </p>
-                <p className="mb-3">You’ll produce small artifacts and a reusable
-                  <em> Claim → Workflow</em> plan that turns philosophical claims into testable inquiries.
-                </p>
-              </div>
-
-              <form className="mt-6 grid md:grid-cols-3 gap-3"
-                    onSubmit={(e) => { e.preventDefault(); if (ready) onBegin(form); }}>
-                <input className="px-4 py-2 rounded-md text-gray-900" placeholder="Full Name"
-                       value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
-                <input className="px-4 py-2 rounded-md text-gray-900" placeholder="Email"
-                       value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} />
-                <input className="px-4 py-2 rounded-md text-gray-900" placeholder="Course/Section"
-                       value={form.course} onChange={e => setForm(f => ({...f, course: e.target.value}))} />
-                <button type="submit"
-                        className={"md:col-span-3 mt-2 px-4 py-2 rounded-md font-semibold " + (ready ? "bg-white text-indigo-700 hover:bg-indigo-50" : "bg-white/50 text-white/70 cursor-not-allowed")}>
-                  Begin Part 12 →
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    /* NEW: The missing Intro component that caused the blank page */
-    function Intro({ onNext }) {
-      return (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Introduction — What This Part Trains</h2>
-          <div className="rounded-lg border p-4 bg-indigo-50 border-indigo-200 mb-4">
-            <p className="text-gray-800 mb-3">
-              Part 12 introduces three 20th-century toolkits as <em>capabilities</em> for inquiry:
-              <strong> phenomenology</strong> (disciplined description of experience),
-              <strong> pragmatism</strong> (problem–hypothesis–tool cycles), and
-              <strong> analytic philosophy</strong> (concept audits & conceptual engineering),
-              plus a quick pass through <strong>language & mind</strong> modeling for testable predictions.
-            </p>
-            <ul className="list-disc list-inside text-gray-800">
-              <li><strong>Agency (A):</strong> situated, trained attention and iteration.</li>
-              <li><strong>Beauty/Awe (B):</strong> elegance of clarified arguments and neat experimental designs.</li>
-              <li><strong>Context (C):</strong> forms of life, labs, and classrooms that scaffold skill.</li>
-              <li><strong>Dynamics (D):</strong> cycles of problem → hypothesis → test → revision.</li>
-            </ul>
-          </div>
-          <p className="text-gray-700">
-            You’ll progress through short practices, then build a <em>Claim → Workflow</em> that turns a philosophical
-            claim into a testable inquiry with KPIs. When you’re ready, click continue.
-          </p>
-          <div className="mt-4 flex justify-end">
-            <button onClick={onNext} className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
-              Continue to Phenomenology →
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    function Panel({ title, color, body, noteValue, onNoteChange, onComplete }) {
-      const colorBox = {
-        blue: "border-blue-200 bg-blue-50",
-        green: "border-green-200 bg-green-50",
-        purple: "border-purple-200 bg-purple-50",
-        indigo: "border-indigo-200 bg-indigo-50"
-      }[color] || "border-gray-200 bg-gray-50";
-
-      return (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
-          <div className={"rounded-lg border p-4 mb-4 " + colorBox}>
-            {body}
-          </div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Your practice note (min 120 chars):</label>
-          <textarea rows="6" className="w-full border rounded-md p-3"
-                    placeholder="Write your field-note / plan / model sketch here..."
-                    value={noteValue}
-                    onChange={(e) => onNoteChange(e.target.value)} />
-          <div className="mt-3 flex justify-end">
-            <button
-              onClick={() => onComplete()}
-              disabled={(noteValue||"").trim().length < 120}
-              className={"px-4 py-2 rounded-md font-semibold " + ((noteValue||"").trim().length >= 120 ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-500 cursor-not-allowed")}>
-              Mark Complete & Continue →
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    function Studio({ value, onChange, onComplete, onDownloadPlan }) {
-      const set = (k, v) => onChange({ ...value, [k]: v });
-      const fields = [
-        { id: "claim", label: "Step 0 — Claim (single sentence you care about)" },
-        { id: "auditAmbiguities", label: "Step 1 — Concept Audit: Ambiguities & Presuppositions (list 2–3)" },
-        { id: "workingDefs", label: "Step 1 — Working Definitions (bullet 2–3 you will use THIS run)" },
-        { id: "phenoNote", label: "Step 2 — Phenomenology Field-Note (120–150 words, no theory terms)" },
-        { id: "hypothesis", label: "Step 3 — Hypothesis (If claim true, we should observe…)" },
-        { id: "consequences", label: "Step 3 — Observable Consequences (at least one behavioral, one attentional)" },
-        { id: "intervention", label: "Step 3 — Minimal Intervention Plan (pilotable in class)" },
-        { id: "ethics", label: "Step 4 — Context & Ethics Check (accessibility, risk, fairness)" },
-        { id: "kpis", label: "Step 5 — KPIs (fit-for-purpose indicators, thresholds)" },
-        { id: "pilotNotes", label: "Step 6 — Pilot Notes (anomalies, surprises, design changes)" },
-        { id: "abcdReflection", label: "Step 7 — ABCD Reflection (Agency, Beauty/Awe, Context, Dynamics)" }
-      ];
-
-      const ready = value.claim && value.workingDefs && value.hypothesis && value.consequences && value.intervention && value.kpis;
-
-      return (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">V. Claim → Workflow Studio</h2>
-          <p className="text-gray-700 mb-4">
-            Turn a philosophical claim into a testable inquiry workflow by chaining concept audit, phenomenology, and pragmatic testing.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            {fields.map(f => (
-              <div key={f.id} className="border rounded-lg p-3 bg-gray-50">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">{f.label}</label>
-                <textarea rows="6" className="w-full border rounded-md p-2"
-                  value={value[f.id]} onChange={(e) => set(f.id, e.target.value)} />
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex flex-col md:flex-row gap-3 justify-end">
-            <button onClick={onDownloadPlan} className="px-4 py-2 rounded-md bg-white border text-gray-700 hover:bg-gray-50">
-              ⬇️ Download Plan (.txt)
-            </button>
-            <button
-              onClick={onComplete}
-              disabled={!ready}
-              className={"px-4 py-2 rounded-md font-semibold " + (ready ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-500 cursor-not-allowed")}>
-              Mark Studio Complete & Continue →
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    function Assessment({ quiz, answers, onAnswer, onSubmit, submitted, score, onNext }) {
-      const allAnswered = quiz.every(q => !!answers[q.id]);
-
-      return (
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">VI. Assessment</h2>
-          <p className="text-gray-700 mb-6">Answer the questions below. Immediate explanations appear after submit.</p>
-
-          <div className="space-y-6">
-            {quiz.map((q, idx) => {
-              const selected = answers[q.id];
-              const right = q.options.find(o => o.correct)?.id;
-              return (
-                <div key={q.id} className="border rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Q{idx+1}. {q.prompt}</h3>
-                  <div className="grid gap-2">
-                    {q.options.map(opt => {
-                      const isChosen = selected === opt.id;
-                      const isCorrect = !!opt.correct;
-                      const base = "text-left w-full border rounded-md p-3";
-                      let cls = "border-gray-300 hover:bg-gray-50";
-                      if (submitted && isChosen && isCorrect) cls = "border-green-500 bg-green-50";
-                      if (submitted && isChosen && !isCorrect) cls = "border-red-500 bg-red-50";
-                      if (submitted && !isChosen && isCorrect) cls = "border-green-400 bg-green-50";
-                      return (
-                        <button key={opt.id}
-                          disabled={submitted}
-                          onClick={() => onAnswer(q.id, opt.id)}
-                          className={`${base} ${cls}`}>
-                          <span className="font-bold mr-2">{opt.id}.</span>{opt.text}
-                        </button>
-                      );
-                    })}
+                  <div className="font-semibold text-gray-900 mb-1">{it.header}</div>
+                  <p className="text-gray-800 text-sm mb-2">{it.what}</p>
+                  <p className="text-gray-700 text-sm"><span className="font-semibold">Why: </span>{it.why}</p>
+                  <div className="text-sm mt-2">
+                    <div className="font-semibold">How (3 steps)</div>
+                    <ol className="list-decimal list-inside text-gray-700">
+                      {it.how.map((h,j)=><li key={j}>{h}</li>)}
+                    </ol>
                   </div>
-                  {submitted && (
-                    <div className={"mt-3 p-3 rounded-md " + (answers[q.id] === right ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")}>
-                      <p className="text-sm text-gray-800"><strong>Explanation:</strong> {q.explanation}</p>
+                  {it.pitfalls?.length>0 && (
+                    <div className="text-sm mt-2">
+                      <div className="font-semibold">Pitfalls</div>
+                      <ul className="list-disc list-inside text-gray-700">
+                        {it.pitfalls.map((p,k)=><li key={k}>{p}</li>)}
+                      </ul>
                     </div>
                   )}
+                  <div className="text-xs text-gray-600 mt-2"><span className="font-semibold">Try it:</span> {it.try}</div>
+                  <div className="text-xs text-gray-600 mt-1"><span className="font-semibold">ABCD:</span> {it.abcd}</div>
+                  <div className="text-xs text-gray-600"><span className="font-semibold">Four Levels:</span> {it.levels}</div>
                 </div>
-              );
-            })}
-          </div>
-
-          {!submitted ? (
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={onSubmit}
-                disabled={!allAnswered}
-                className={"px-4 py-2 rounded-md font-semibold " + (allAnswered ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-500 cursor-not-allowed")}>
-                Submit Assessment
-              </button>
-            </div>
-          ) : (
-            <div className="mt-6 flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-              <div>
-                <p className="text-indigo-900 font-semibold">Your score: {score}%</p>
-                <p className="text-indigo-800 text-sm">Mastery: {masteryFromPercent(score)}</p>
-              </div>
-              <button onClick={onNext} className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
-                View Completion Doc →
-              </button>
+              ))}
+              {children}
             </div>
           )}
         </div>
       );
     }
 
-    function Completion({ student, session, progress, score, onDownload, docText }) {
-      const totalMin = Object.values(progress).reduce((acc, s) => acc + (s.minutes||0), 0);
-      const mastery = masteryFromPercent(score);
+    function QuickCheck({ q, options, correct, onResult }) {
+      const [choice, setChoice] = useState(null);
+      const [done, setDone] = useState(false);
+      const pick = (i)=>{ if (!done) setChoice(i); };
+      const submit = ()=>{
+        if (choice == null) return;
+        setDone(true);
+        onResult?.(choice === correct);
+      };
       return (
-        <div id="printable" className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">VII. Completion Document</h2>
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-gray-500 text-sm">Student</div>
-              <div className="font-semibold">{student.name}</div>
-              <div className="text-sm text-gray-700">{student.email}</div>
-              <div className="text-sm text-gray-700">{student.course}</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-gray-500 text-sm">Session</div>
-              <div className="text-sm text-gray-700">ID: {session.id}</div>
-              <div className="text-sm text-gray-700">Start: {session.startedAt}</div>
-              <div className="text-sm text-gray-700">Complete: {session.completedAt || "(in progress)"}</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-gray-500 text-sm">Summary</div>
-              <div className="text-sm text-gray-700">Assessment: <strong>{score}%</strong></div>
-              <div className="text-sm text-gray-700">Mastery: <strong>{mastery}</strong></div>
-              <div className="text-sm text-gray-700">Time on task: <strong>{totalMin} min</strong></div>
-            </div>
+        <div className="mt-4 border rounded p-4">
+          <div className="font-semibold mb-2">Quick Check</div>
+          <p className="mb-3">{q}</p>
+          <div className="space-y-2">
+            {options.map((t,i)=>{
+              const base = "w-full text-left px-3 py-2 rounded border";
+              let cls = "border-gray-200 bg-white hover:bg-gray-50";
+              if (done) {
+                if (i===correct) cls = "border-green-500 bg-green-50";
+                else if (i===choice) cls = "border-red-500 bg-red-50";
+                else cls = "border-gray-200 bg-white";
+              } else if (choice===i) {
+                cls = "border-indigo-500 bg-indigo-50";
+              }
+              return <button key={i} onClick={()=>pick(i)} className={`${base} ${cls}`}>{t}</button>
+            })}
           </div>
-
-          <div className="overflow-auto border rounded-lg">
-            <pre className="whitespace-pre-wrap text-sm p-4">{docText}</pre>
-          </div>
-
-          <div className="mt-4 flex flex-col md:flex-row gap-3 justify-end">
-            <button onClick={onDownload} className="px-4 py-2 rounded-md bg-white border text-gray-700 hover:bg-gray-50">
-              ⬇️ Download (.txt)
-            </button>
-            <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
-              🖨️ Print
+          <div className="mt-3 flex justify-end">
+            <button onClick={submit}
+              className={"px-3 py-2 rounded text-white " + (choice==null ? "bg-gray-300 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700")}>
+              Check
             </button>
           </div>
+        </div>
+      )
+    }
+
+    /************ Section Content ************/
+    function Phenomenology({onScore}) {
+      const [mini, setMini] = useState({obj:"", notes:""});
+      const [score, setScore] = useState(0);
+      const bump = ok => { setScore(s=>s+(ok?1:0)); onScore?.("phenomenology", ok); };
+
+      const primerItems = [
+        {
+          term: "Epoché / Bracketing",
+          header: "Suspend presuppositions to describe what is given.",
+          what: "A disciplined pause on theoretical assumptions to describe the structure of experience as it appears.",
+          why: "Trains clean observation; reduces theory-ladenness and premature inference.",
+          how: [
+            "Name the target (e.g., 'the mug on desk').",
+            "List features as they appear: figure/ground, texture, affordances.",
+            "Withhold causal/explanatory talk; stay with description."
+          ],
+          pitfalls: ["Sliding into causal stories; smuggling value judgments; vague adjectives without contrasts."],
+          try: "60s: describe a pencil's experienced affordances (grasp, balance, tip-feel) with no causal terms.",
+          abcd: "A: trained attention • B: elegance of crisp descriptions • C: lifeworld/task setting • D: iterative noticing & refinement",
+          levels: "Capacity: attention → Capability: bracketing notes → Constructor: studio routine → Meta: peer critique norms"
+        },
+        {
+          term: "Intentionality (Noesis/Noema)",
+          header: "Experience is always 'about' something—map act/object structure.",
+          what: "Every act of consciousness has an object as-meant; chart act (noesis), object-as-presented (noema), and horizons.",
+          why: "Clarifies what exactly is attended and how it is meant; reduces ambiguity downstream.",
+          how: [
+            "State the act (e.g., anticipating, perceiving, remembering).",
+            "State the object-as-meant (features, saliences).",
+            "List horizons (what’s expected next / background assumptions)."
+          ],
+          pitfalls: ["Treating 'aboutness' as inner pictures; skipping horizon notes."],
+          try: "Map one act/object pair (e.g., 'waiting for a text') + its horizon.",
+          abcd: "A: situated agency • B: 'aha' of precise mapping • C: everyday context • D: horizon-updates with feedback",
+          levels: "Capacity: directedness → Capability: mapping template → Constructor: recurring note-taking → Meta: refining templates"
+        },
+        {
+          term: "Phenomenological Reduction",
+          header: "From everyday stance to structures of appearance.",
+          what: "Shift focus from the 'is-it-true' stance to 'how-it-appears' to reveal invariants of experience.",
+          why: "Extracts stable structures (invariants) useful for later modeling or testing.",
+          how: [
+            "Perform epoché on truth/fact questions.",
+            "Search for invariants across variants (e.g., grip-feel across cups).",
+            "Record contrasts & limits (when the structure breaks)."
+          ],
+          pitfalls: ["Confusing reduction with skepticism; drifting back to metaphysical claims."],
+          try: "Compare two everyday sights: note 2–3 invariant aspects of 'reading a screen'.",
+          abcd: "A: disciplined stance • B: elegance of minimal invariants • C: context frames appearances • D: variant–invariant comparisons",
+          levels: "Capacity: stance shift → Capability: comparative grids → Constructor: lab protocol → Meta: method revision"
+        }
+      ];
+
+      return (
+        <SectionCard
+          title="Phenomenology — 'Back to the things themselves'"
+          subtitle="Structure of experience, description before explanation"
+          icon="👁️"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              <span className="font-semibold">Big question:</span> What is the structure of experience and its directedness?
+              &nbsp;<span className="font-semibold">Capabilities:</span> epoché/bracketing; act–object mapping; horizon analysis.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge tone="blue">A: Situated Agency</Badge>
+              <Badge tone="purple">C: Forms of Life / Lifeworld</Badge>
+              <Badge tone="green">D: Iterative noticing</Badge>
+              <Badge tone="indigo">B: Elegance of clear descriptions</Badge>
+            </div>
+
+            <MicroPrimer title="Phenomenology (epoché, bracketing, intentionality)" items={primerItems}>
+              <QuickCheck
+                q="Which action best exemplifies epoché during observation?"
+                options={[
+                  "Explaining why the mug was manufactured that way",
+                  "Describing grip/weight/rim feel without theory",
+                  "Inferring the designer’s intentions",
+                  "Comparing two brands’ pricing strategies"
+                ]}
+                correct={1}
+                onResult={bump}
+              />
+              <QuickCheck
+                q="In intentional analysis, the 'horizon' refers to:"
+                options={[
+                  "Background expectations and possible nexts",
+                  "The object’s price and warranty",
+                  "The camera’s depth of field",
+                  "A distant mountain range"
+                ]}
+                correct={0}
+                onResult={bump}
+              />
+            </MicroPrimer>
+
+            <div className="mt-4 p-4 bg-gray-50 border rounded">
+              <div className="font-semibold mb-2">Mini-Lab: 90-second description without theory</div>
+              <p className="text-sm text-gray-700 mb-2">Pick a mundane object and perform bracketing. Capture only appearances.</p>
+              <input
+                className="w-full border rounded px-3 py-2 mb-2"
+                placeholder="Object (e.g., 'coffee mug')"
+                value={mini.obj}
+                onChange={(e)=>setMini({...mini, obj:e.target.value})}
+              />
+              <textarea
+                className="w-full border rounded px-3 py-2 h-28"
+                placeholder="Write 4–6 lines describing figure/ground, texture, affordances, immediate feel, horizons…"
+                value={mini.notes}
+                onChange={(e)=>setMini({...mini, notes:e.target.value})}
+              />
+            </div>
+          </div>
+        </SectionCard>
+      );
+    }
+
+    function Pragmatism({onScore}) {
+      const [plan, setPlan] = useState({problem:"", hypothesis:"", consequences:"", test:""});
+      const bump = ok => onScore?.("pragmatism", ok);
+
+      const items = [
+        {
+          term: "Inquiry Cycle (Dewey)",
+          header: "Problem → Hypothesis → Consequences → Experiment → Learning",
+          what: "Ideas are tools; truth tracks what reliably works for resolving the felt difficulty.",
+          why: "Turns philosophy into an engineering workshop for lived problems.",
+          how: [
+            "State a concrete problematic situation.",
+            "Frame a plausible hypothesis for resolving it.",
+            "Derive observable consequences to test."
+          ],
+          pitfalls: ["Vague 'problems'; hypotheses with no observable bite; skipping post-test learning."],
+          try: "Pick a small friction in your routine; write 1 hypothesis + 2 testable consequences.",
+          abcd: "A: agent recalibration • B: 'aha' when it works • C: task/equipment setting • D: problem–tool loops",
+          levels: "Capacity: improvise → Capability: inquiry template → Constructor: team retros → Meta: process improvement"
+        },
+        {
+          term: "Abduction, Induction, Deduction (Peirce)",
+          header: "Generate → Support → Imply",
+          what: "Abduction proposes a candidate explanation; induction estimates support; deduction yields testable implications.",
+          why: "Decomposes reasoning so each step can be checked or improved.",
+          how: [
+            "Abduce: suggest an explanatory pattern.",
+            "Induce: gather data to update credence.",
+            "Deduce: specify predictions and tests."
+          ],
+          pitfalls: ["Treating abduction as proof; induction from tiny samples; deductions with undefined terms."],
+          try: "Abduce a reason for a recurring error; list 2 observations that would raise/lower confidence.",
+          abcd: "A: creative agency • B: elegance of a unifying hunch • C: evidence ecology • D: update cycles",
+          levels: "Capacity: guess → Capability: structured updates → Constructor: lab notebook → Meta: method-tuning"
+        },
+        {
+          term: "Warranted Assertability (Dewey)",
+          header: "Justification is context-sensitive and practice-bound.",
+          what: "A claim is warranted when, given present tools and checks, it stands up to inquiry aimed at the problem.",
+          why: "Focuses justification on what matters for action now, yet remains revisable.",
+          how: [
+            "Name the standards relevant to this problem.",
+            "Show checks passed (replication, counterfactuals).",
+            "Record failure modes and revisit cadence."
+          ],
+          pitfalls: ["Treating warrant as permanent; ignoring domain standards; 'trust me' warrants."],
+          try: "Write warrant criteria for a study habit change you plan to test next week.",
+          abcd: "A: accountable agency • B: satisfying closure • C: institutional checks • D: scheduled revisits",
+          levels: "Capacity: justify → Capability: checklists → Constructor: review ritual → Meta: governance updates"
+        }
+      ];
+
+      return (
+        <SectionCard
+          title="Pragmatism — Inquiry as problem-solving"
+          subtitle="Ideas as tools; truth as what works in practice under scrutiny"
+          icon="🛠️"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              <span className="font-semibold">Big question:</span> How do we turn puzzlement into improved action?
+              &nbsp;<span className="font-semibold">Capabilities:</span> formulating problems, designing hypotheses, specifying testable consequences, learning.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge tone="blue">A: Situated Agency</Badge>
+              <Badge tone="purple">C: Labs / Studios</Badge>
+              <Badge tone="green">D: Problem–Hypothesis–Tool Cycles</Badge>
+              <Badge tone="indigo">B: Elegance of clean tests</Badge>
+            </div>
+
+            <MicroPrimer title="Pragmatic Inquiry (Dewey/Peirce)" items={items}>
+              <QuickCheck
+                q="Which ordering matches Peirce’s triad?"
+                options={[
+                  "Induction → Abduction → Deduction",
+                  "Abduction → Induction → Deduction",
+                  "Deduction → Abduction → Induction",
+                  "Abduction → Deduction → Induction"
+                ]}
+                correct={1}
+                onResult={bump}
+              />
+              <QuickCheck
+                q="In Dewey’s model, 'warrant' is best understood as:"
+                options={[
+                  "A permanent proof of truth",
+                  "Context-free certainty",
+                  "Practice-bound justification under current checks",
+                  "A personal conviction that feels strong"
+                ]}
+                correct={2}
+                onResult={bump}
+              />
+            </MicroPrimer>
+
+            <div className="mt-4 p-4 bg-gray-50 border rounded">
+              <div className="font-semibold mb-2">Mini-Lab: Build a one-page inquiry</div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <textarea className="border rounded px-3 py-2 h-28" placeholder="Problem (felt difficulty)…"
+                  value={plan.problem} onChange={e=>setPlan({...plan, problem:e.target.value})}/>
+                <textarea className="border rounded px-3 py-2 h-28" placeholder="Hypothesis (tool/approach that could resolve it)…"
+                  value={plan.hypothesis} onChange={e=>setPlan({...plan, hypothesis:e.target.value})}/>
+                <textarea className="border rounded px-3 py-2 h-28" placeholder="Observable consequences (what you’d see if the hypothesis works)…"
+                  value={plan.consequences} onChange={e=>setPlan({...plan, consequences:e.target.value})}/>
+                <textarea className="border rounded px-3 py-2 h-28" placeholder="Test (procedure, measures, stop conditions)…"
+                  value={plan.test} onChange={e=>setPlan({...plan, test:e.target.value})}/>
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+      );
+    }
+
+    function Analytic({onScore}) {
+      const [work, setWork] = useState({claim:"", terms:"", counter:"", form:"", ops:""});
+      const bump = ok => onScore?.("analytic", ok);
+
+      const items = [
+        {
+          term: "Concept Analysis",
+          header: "Clarify necessary/sufficient conditions; hunt counterexamples.",
+          what: "Audit a concept by proposing conditions and testing them with cases (Gettier-style pressure tests).",
+          why: "Sharpens meanings before arguments; prevents equivocation.",
+          how: [
+            "List candidate conditions (N/S).",
+            "Construct counterexamples (too broad/narrow).",
+            "Revise the analysis iteratively."
+          ],
+          pitfalls: ["Equivocation; definitions that merely re-label; ignoring borderline cases."],
+          try: "Pick 'consent' or 'knowledge'; write 2 conditions + 1 counterexample each.",
+          abcd: "A: disciplined attention • B: elegance of minimal definitions • C: case libraries • D: refine via counterexamples",
+          levels: "Capacity: define → Capability: case-testing → Constructor: shared exemplars → Meta: update definitions"
+        },
+        {
+          term: "Logical Form",
+          header: "Surface structure → underlying argument form.",
+          what: "Translate natural language into standard forms (modus ponens/tollens, quantifiers) to assess validity.",
+          why: "Separates content from structure; reveals fallacies.",
+          how: [
+            "Paraphrase premises & conclusion cleanly.",
+            "Symbolize key claims; mark quantifiers.",
+            "Check validity; locate illicit steps."
+          ],
+          pitfalls: ["Over-symbolizing; dropping indexicals; hiding ambiguity under symbols."],
+          try: "Symbolize: 'If effort matters, grades shouldn’t be pure curve; effort matters; so no pure curve.'",
+          abcd: "A: agency in editing arguments • B: elegant proofs • C: classroom or debate setting • D: proof/refutation loops",
+          levels: "Capacity: parse → Capability: symbolize → Constructor: proof routines → Meta: system comparisons"
+        },
+        {
+          term: "Ordinary vs. Ideal Language",
+          header: "When to use ordinary-use analysis vs. ideal precisification.",
+          what: "Ordinary language maps lived use; ideal language offers precision for logic/models—pick deliberately.",
+          why: "Prevents category errors; blends clarity with relevance.",
+          how: [
+            "Check ordinary uses & implicatures.",
+            "Specify a targeted idealization for analysis.",
+            "Cross-validate: does the idealization distort stakes?"
+          ],
+          pitfalls: ["Forcing everyday disputes into exotic jargon; or staying vague when precision is needed."],
+          try: "Take 'fairness' in grading; contrast ordinary uses with a precise operationalization.",
+          abcd: "A: fit to practices • B: neat alignments • C: setting demands • D: iterate between uses and models",
+          levels: "Capacity: notice uses → Capability: choose frame → Constructor: style guide → Meta: community norms"
+        }
+      ];
+
+      return (
+        <SectionCard
+          title="Analytic Philosophy — Clarity, form, and method"
+          subtitle="Concept audit, logical form, operationalization"
+          icon="🧠"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700">
+              <span className="font-semibold">Big question:</span> What’s the claim, what does it mean, and does the argument hold?
+              &nbsp;<span className="font-semibold">Capabilities:</span> concept analysis, formal validity checks, operational definitions.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge tone="blue">A: Situated Agency (editing arguments)</Badge>
+              <Badge tone="purple">C: Forms of Life (seminars, debate)</Badge>
+              <Badge tone="green">D: Proof / Refutation Iterations</Badge>
+              <Badge tone="indigo">B: Elegance of proofs/definitions</Badge>
+            </div>
+
+            <MicroPrimer title="Analytic Toolkit" items={items}>
+              <QuickCheck
+                q="A good counterexample to a proposed definition shows that it is:"
+                options={[
+                  "Too broad or too narrow",
+                  "Grammatically incorrect",
+                  "Psychologically implausible",
+                  "Historically unpopular"
+                ]}
+                correct={0}
+                onResult={bump}
+              />
+              <QuickCheck
+                q="Symbolizing an argument primarily helps you:"
+                options={[
+                  "Avoid dealing with evidence",
+                  "Hide ambiguities",
+                  "Expose validity/invalidity of structure",
+                  "Win debates by intimidation"
+                ]}
+                correct={2}
+                onResult={bump}
+              />
+            </MicroPrimer>
+
+            <div className="mt-4 p-4 bg-gray-50 border rounded">
+              <div className="font-semibold mb-2">Mini-Lab: Concept → Form → Ops</div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <textarea className="border rounded px-3 py-2 h-24" placeholder="Target claim (natural language)…"
+                  value={work.claim} onChange={e=>setWork({...work, claim:e.target.value})}/>
+                <textarea className="border rounded px-3 py-2 h-24" placeholder="Key terms (necessary/sufficient conditions)…"
+                  value={work.terms} onChange={e=>setWork({...work, terms:e.target.value})}/>
+                <textarea className="border rounded px-3 py-2 h-24" placeholder="Counterexample(s)…"
+                  value={work.counter} onChange={e=>setWork({...work, counter:e.target.value})}/>
+                <textarea className="border rounded px-3 py-2 h-24" placeholder="Logical form (→, ∧, ∨, ∀, ∃)…"
+                  value={work.form} onChange={e=>setWork({...work, form:e.target.value})}/>
+              </div>
+              <textarea className="mt-3 border rounded px-3 py-2 w-full h-24"
+                placeholder="Operationalization (what observations count? thresholds? measures?)"
+                value={work.ops} onChange={e=>setWork({...work, ops:e.target.value})}/>
+            </div>
+          </div>
+        </SectionCard>
+      );
+    }
+
+    /************ Studio: turn a philosophical claim into a testable workflow ************/
+    function Studio({ phenReady, pragReady, analReady }) {
+      const [mode, setMode] = useState("pragmatism"); // or phenomenology / analytic
+      const [claim, setClaim] = useState("");
+      const [output, setOutput] = useState("");
+
+      const makePlan = ()=>{
+        const c = claim.trim();
+        if (!c) { setOutput("Please enter a claim to transform."); return; }
+
+        if (mode === "phenomenology") {
+          setOutput([
+            "WORKFLOW (Phenomenology)",
+            "1) Target & Epoché:",
+            `   • Targeted phenomenon: ${c}`,
+            "   • Bracket theoretical explanations; commit to description-only session (3–5 min).",
+            "2) Act/Object Mapping:",
+            "   • Map noesis (act) and noema (object-as-meant); list horizons (expected nexts).",
+            "3) Variant–Invariant Scan:",
+            "   • Compare 2–3 variants; list invariants; mark breakdown points.",
+            "4) Record & Share:",
+            "   • Produce 6–10 observation lines; peer critique for clarity (no theory creep).",
+            "5) Next Iteration:",
+            "   • Add contrasts; refine invariants; decide if operationalization is ready."
+          ].join("\n"));
+        } else if (mode === "pragmatism") {
+          setOutput([
+            "WORKFLOW (Pragmatism)",
+            `Claim/tool to probe: ${c}`,
+            "1) Problem:",
+            "   • State a concrete felt difficulty this claim/tool aims to resolve.",
+            "2) Hypothesis:",
+            "   • If we adopt/act on the claim, X consequence should follow in context Y.",
+            "3) Consequences:",
+            "   • List 2–3 observable outcomes that would count for/against it.",
+            "4) Test Plan:",
+            "   • Procedure, measures, timebox, stop conditions; record failure modes.",
+            "5) Warrant:",
+            "   • State current warrant criteria; schedule revisit; update based on results."
+          ].join("\n"));
+        } else {
+          setOutput([
+            "WORKFLOW (Analytic)",
+            `Target claim: ${c}`,
+            "1) Concept Analysis:",
+            "   • Define key terms (N/S conditions). Add at least one counterexample & revise.",
+            "2) Logical Form:",
+            "   • Translate to formal structure; test validity; locate any fallacies.",
+            "3) Operationalization:",
+            "   • Specify what observations/thresholds would count as confirmation/disconfirmation.",
+            "4) Cross-check (Ordinary vs Ideal):",
+            "   • Compare ordinary usage with your precisified version; adjust if distorted.",
+            "5) Test & Iterate:",
+            "   • Apply to 2 cases; log misfits; revise the definition or the claim accordingly."
+          ].join("\n"));
+        }
+      };
+
+      const downloadable = useMemo(()=>{
+        return new Blob([output], {type:"text/plain"});
+      }, [output]);
+
+      return (
+        <SectionCard
+          title="Design Studio — Turn a claim into a testable workflow"
+          subtitle="Choose a method lens and auto-build a plan you can trial this week"
+          icon="🎛️"
+        >
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge tone={phenReady? "green":"gray"}>Phenomenology {phenReady? "✓":"•"}</Badge>
+              <Badge tone={pragReady? "green":"gray"}>Pragmatism {pragReady? "✓":"•"}</Badge>
+              <Badge tone={analReady? "green":"gray"}>Analytic {analReady? "✓":"•"}</Badge>
+            </div>
+
+            <div className="grid md:grid-cols-4 gap-3">
+              <div className="md:col-span-3">
+                <input className="w-full border rounded px-3 py-2"
+                  placeholder="Enter a philosophical claim (e.g., 'Grading fairness requires transparent rubrics')."
+                  value={claim} onChange={e=>setClaim(e.target.value)} />
+              </div>
+              <div className="flex md:col-span-1 gap-2">
+                <select className="w-full border rounded px-2 py-2" value={mode} onChange={e=>setMode(e.target.value)}>
+                  <option value="phenomenology">Phenomenology</option>
+                  <option value="pragmatism">Pragmatism</option>
+                  <option value="analytic">Analytic</option>
+                </select>
+                <button onClick={makePlan} className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">Build</button>
+              </div>
+            </div>
+
+            <textarea className="w-full border rounded px-3 py-2 h-52 bg-white" value={output} readOnly placeholder="Your workflow will appear here…"></textarea>
+
+            <div className="flex flex-wrap gap-2">
+              <a
+                className={"px-3 py-2 rounded " + (output ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-300 text-gray-600 cursor-not-allowed")}
+                download="workflow.txt"
+                href={output ? URL.createObjectURL(downloadable) : undefined}
+              >
+                Download Plan
+              </a>
+              <button
+                onClick={()=>{ if (output) { navigator.clipboard.writeText(output); alert("Copied to clipboard!"); } }}
+                className={"px-3 py-2 rounded " + (output ? "bg-gray-800 text-white hover:bg-black" : "bg-gray-300 text-gray-600 cursor-not-allowed")}
+              >
+                Copy to Clipboard
+              </button>
+            </div>
+          </div>
+        </SectionCard>
+      );
+    }
+
+    /************ App Shell ************/
+    function App() {
+      const [student, setStudent] = useState({name:"", email:"", course:""});
+      const [ready, setReady] = useState(false);
+      const [tab, setTab] = useState("phenomenology"); // phenomenology | pragmatism | analytic | studio | review
+      const [scores, setScores] = useState({ phenomenology:0, pragmatism:0, analytic:0 });
+
+      useEffect(()=>{
+        const saved = localStorage.getItem("p12_state_v1");
+        if (saved) {
+          try {
+            const obj = JSON.parse(saved);
+            if (obj.student) setStudent(obj.student);
+            if (obj.tab) setTab(obj.tab);
+            if (obj.ready) setReady(obj.ready);
+            if (obj.scores) setScores(obj.scores);
+          } catch {}
+        }
+      }, []);
+      useEffect(()=>{
+        localStorage.setItem("p12_state_v1", JSON.stringify({student, ready, tab, scores}));
+      }, [student, ready, tab, scores]);
+
+      const onScore = (sec, ok)=> setScores(s => ({...s, [sec]: s[sec] + (ok?1:0)}));
+
+      const phenReady = scores.phenomenology >= 1;
+      const pragReady = scores.pragmatism >= 1;
+      const analReady = scores.analytic >= 1;
+
+      if (!ready) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
+            <div className="max-w-4xl mx-auto px-4 py-12">
+              <div className="bg-white/10 rounded-xl p-8 shadow-xl">
+                <h1 className="text-3xl font-extrabold mb-2">Part 12 — Phenomenology • Pragmatism • Analytic</h1>
+                <p className="opacity-90 mb-6">
+                  The Braid of Philosophy as a workshop: turn classic methods into practical capabilities.
+                </p>
+
+                <div className="grid md:grid-cols-3 gap-4 mb-4">
+                  <div className="bg-white/10 rounded p-4">
+                    <div className="text-xl">👁️</div>
+                    <div className="font-semibold">Phenomenology</div>
+                    <div className="text-sm opacity-90">Description before explanation</div>
+                  </div>
+                  <div className="bg-white/10 rounded p-4">
+                    <div className="text-xl">🛠️</div>
+                    <div className="font-semibold">Pragmatism</div>
+                    <div className="text-sm opacity-90">Inquiry as problem-solving</div>
+                  </div>
+                  <div className="bg-white/10 rounded p-4">
+                    <div className="text-xl">🧠</div>
+                    <div className="font-semibold">Analytic</div>
+                    <div className="text-sm opacity-90">Concepts, form, and proofs</div>
+                  </div>
+                </div>
+
+                <form className="grid gap-3 bg-white rounded-lg text-gray-900 p-4">
+                  <div>
+                    <label className="text-sm text-gray-600">Full Name *</label>
+                    <input className="w-full border rounded px-3 py-2" value={student.name}
+                      onChange={e=>setStudent({...student, name:e.target.value})} placeholder="Your full name"/>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Email *</label>
+                    <input className="w-full border rounded px-3 py-2" value={student.email}
+                      onChange={e=>setStudent({...student, email:e.target.value})} placeholder="you@school.edu"/>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600">Course/Section *</label>
+                    <input className="w-full border rounded px-3 py-2" value={student.course}
+                      onChange={e=>setStudent({...student, course:e.target.value})} placeholder="PHI 101 - 02"/>
+                  </div>
+                  <button type="button"
+                    onClick={()=>{
+                      if (student.name && student.email && student.course) setReady(true);
+                      else alert("Please fill all fields to continue.");
+                    }}
+                    className="px-4 py-3 rounded bg-indigo-600 text-white hover:bg-indigo-700">
+                    Go to Part 12 →
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const tabs = [
+        {id:"phenomenology", label:"Phenomenology", icon:"👁️"},
+        {id:"pragmatism", label:"Pragmatism", icon:"🛠️"},
+        {id:"analytic", label:"Analytic", icon:"🧠"},
+        {id:"studio", label:"Design Studio", icon:"🎛️"},
+        {id:"review", label:"Review & Export", icon:"✅"}
+      ];
+
+      return (
+        <div className="min-h-screen">
+          <header className="bg-white shadow">
+            <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">🧰</span>
+                <div>
+                  <div className="text-lg font-bold">Part 12 — Phenomenology • Pragmatism • Analytic</div>
+                  <div className="text-sm text-gray-600">Student: {student.name || "—"} · {student.course || "—"}</div>
+                </div>
+              </div>
+              <button
+                onClick={()=>{
+                  if (confirm("Reset all local progress?")) {
+                    localStorage.removeItem("p12_state_v1");
+                    location.reload();
+                  }
+                }}
+                className="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-800"
+              >Reset</button>
+            </div>
+          </header>
+
+          <nav className="bg-white border-b">
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="flex overflow-x-auto gap-2 py-3">
+                {tabs.map(t=>(
+                  <button key={t.id} onClick={()=>setTab(t.id)}
+                    className={"px-4 py-2 rounded-lg border " + (tab===t.id ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                      : "border-gray-200 hover:bg-gray-50")}>
+                    <span className="mr-2">{t.icon}</span>{t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </nav>
+
+          <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+            {tab==="phenomenology" && <Phenomenology onScore={onScore}/>}
+            {tab==="pragmatism" && <Pragmatism onScore={onScore}/>}
+            {tab==="analytic" && <Analytic onScore={onScore}/>}
+            {tab==="studio" && <Studio phenReady={phenReady} pragReady={pragReady} analReady={analReady} />}
+            {tab==="review" && <Review scores={scores} student={student} />}
+          </main>
+
+          <footer className="py-6 text-center text-xs text-gray-500">
+            © {new Date().getFullYear()} Part 12 Workshop · Saves locally · Built for GitHub Pages
+          </footer>
         </div>
       );
     }
 
-    // ---------- Mount ----------
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    function Review({scores, student}) {
+      const text = [
+        "PART 12 — COMPLETION SNAPSHOT",
+        "--------------------------------",
+        `Student: ${student.name} | ${student.email} | ${student.course}`,
+        "",
+        "Quick-Check Tally (≥1 per section suggests readiness for Studio):",
+        `• Phenomenology: ${scores.phenomenology}`,
+        `• Pragmatism:    ${scores.pragmatism}`,
+        `• Analytic:      ${scores.analytic}`,
+        "",
+        "Notes:",
+        "This snapshot records section quick-check hits only. Use your Studio plan export for detailed workflow steps."
+      ].join("\n");
+      const blob = useMemo(()=> new Blob([text],{type:"text/plain"}), [text]);
+
+      return (
+        <SectionCard title="Review & Export" subtitle="Download a quick snapshot; your Studio plan can be exported there" icon="✅">
+          <pre className="bg-gray-50 border rounded p-4 overflow-auto text-xs whitespace-pre-wrap">{text}</pre>
+          <div className="flex gap-2 mt-3">
+            <a className="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700" href={URL.createObjectURL(blob)} download="part12_snapshot.txt">Download Snapshot</a>
+            <button className="px-3 py-2 rounded bg-gray-800 text-white hover:bg-black"
+              onClick={()=>{ navigator.clipboard.writeText(text); alert("Snapshot copied."); }}>
+              Copy Snapshot
+            </button>
+          </div>
+        </SectionCard>
+      );
+    }
+
+    /************ Mount ************/
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
 </body>
 </html>
