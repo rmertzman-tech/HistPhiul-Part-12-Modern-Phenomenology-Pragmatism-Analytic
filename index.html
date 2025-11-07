@@ -1,675 +1,815 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRF Synthesizer & Analyzer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .card {
-            background-color: white;
-            border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        .btn {
-            transition: background-color 0.3s, transform 0.2s;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-        .btn-primary {
-            background-color: #4f46e5;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #4338ca;
-        }
-        .btn-secondary {
-            background-color: #6b7280;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background-color: #4b5563;
-        }
-        .upload-box {
-            border: 2px dashed #d1d5db;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.3s, background-color 0.3s;
-            position: relative;
-        }
-        .upload-box:hover, .upload-box.drag-over {
-            border-color: #4f46e5;
-            background-color: #f0f2ff;
-        }
-        .upload-box.filled {
-             border-color: #10b981;
-             background-color: #f0fdf4;
-        }
-        .clear-btn {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            background-color: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 1.75rem;
-            height: 1.75rem;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            font-size: 1.25rem;
-        }
-        .clear-btn:hover {
-            background-color: #dc2626;
-        }
-        .expand-btn {
-            position: absolute;
-            top: 0.5rem;
-            left: 0.5rem;
-            background-color: #6b7280;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 1.75rem;
-            height: 1.75rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0.7;
-        }
-        .expand-btn:hover {
-            opacity: 1;
-        }
-        .review-box-container {
-            position: relative;
-        }
-        .review-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            height: 450px;
-            transition: all 0.5s ease-in-out;
-        }
-        .review-grid.focused .review-box-container {
-            flex-grow: 0;
-            width: 50px; /* Shrink width */
-        }
-        .review-grid.focused .review-box-container.is-focused {
-            flex-grow: 1;
-            width: auto; /* Expand width */
-        }
-        .review-grid.focused {
-            display: flex;
-        }
-
-        .screen {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .hidden {
-            display: none;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border-left-color: #fff;
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .chat-message {
-            max-width: 80%;
-            padding: 0.75rem 1rem;
-            border-radius: 1rem;
-            margin-bottom: 0.5rem;
-            white-space: pre-wrap;
-        }
-        .user-message {
-            background-color: #4f46e5;
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 0.25rem;
-        }
-        .ai-message {
-            background-color: #e5e7eb;
-            color: #1f2937;
-            align-self: flex-start;
-            border-bottom-left-radius: 0.25rem;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Part 12 — 20th-Century Turns: Phenomenology • Pragmatism • Analytic • Language & Mind</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- React UMD + Babel -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Tailwind (runtime) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Inter font (optional) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; }
+    .gradient-header { background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #0ea5e9 100%); }
+    .progress-bar { transition: width .3s ease; }
+    @media print {
+      body * { visibility: hidden; }
+      #printable, #printable * { visibility: visible; }
+      #printable { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4 md:p-8">
+<body class="bg-gray-50">
+  <div id="root"></div>
 
-    <div id="app" class="w-full max-w-7xl mx-auto">
-        
-        <!-- Start Screen -->
-        <div id="start-screen" class="screen text-center max-w-2xl mx-auto">
-             <div class="card p-8 md:p-12">
-                <h1 class="text-4xl font-bold">Personal Reality Framework (PRF) Synthesizer</h1>
-                <p class="text-gray-600 mt-4 mb-8">The central hub for analyzing and integrating your personal insights.</p>
-                <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <button id="start-here-btn" class="btn btn-primary px-8 py-3 rounded-lg font-semibold text-lg">Start Here</button>
-                    <a href="https://rmertzman-tech.github.io/Nelson-Mandela/" target="_blank" class="btn btn-secondary px-8 py-3 rounded-lg font-semibold text-lg">View an Example</a>
-                </div>
-            </div>
-        </div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-        <!-- Explanation Screen -->
-        <div id="explanation-screen" class="screen hidden text-left max-w-3xl mx-auto">
-            <div class="card p-8 md:p-12">
-                <h2 class="text-3xl font-bold text-center mb-6">Synthesize Your Framework</h2>
-                <p class="text-gray-700 mb-4">Welcome to the Synthesizer. This is where you bring together the insights you've gathered from all six explorer modules.</p>
-                
-                <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-800 p-4 rounded-md my-6">
-                    <h3 class="font-bold">How to Use This Tool (For Your Own Work):</h3>
-                    <ul class="list-disc list-inside mt-2 space-y-1">
-                        <li>Use the **"Load Data from Explorers"** button for a quick way to import your saved work.</li>
-                        <li>Alternatively, you can **drag-and-drop your .txt files** from each explorer into the upload boxes.</li>
-                        <li>The review boxes are editable. You can use the **expand icon** (⤢) for a focused view of your data.</li>
-                        <li>Use the **"Begin Guided Synthesis"** feature to have a step-by-step conversation with the AI Tutor to help you synthesize your framework.</li>
-                        <li>**Download your complete PRF** as a single file to save your work.</li>
-                    </ul>
-                </div>
+    // ---------- Utilities ----------
+    const STORAGE_KEY = "part12_progress_v1";
 
-                <div class="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-md my-6">
-                    <h3 class="font-bold">Using the Demo Case Studies</h3>
-                    <p class="mt-2">To see how the AI Tutor works with a completed example, you can load one of our demo case studies. The full "Demo Library" with many more examples is available on the main <a href="https://rmertzman-tech.github.io/PRF-PROJECT-HUB/" target="_blank" class="underline font-semibold">Project Hub Page</a>.</p>
-                    <p class="mt-2 font-semibold">Workflow to analyze a demo:</p>
-                    <ol class="list-decimal list-inside mt-1">
-                        <li>Visit a demo page from the Hub.</li>
-                        <li>Click the "Load this Demo into Synthesizer" button on that page.</li>
-                        <li>Return here and use the "Load Data from Explorers" button to import the demo data.</li>
-                    </ol>
-                </div>
+    const generateSessionId = () => {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, "0");
+      return [
+        "P12",
+        d.getFullYear(),
+        pad(d.getMonth()+1),
+        pad(d.getDate()),
+        "-",
+        pad(d.getHours()),
+        pad(d.getMinutes()),
+        pad(d.getSeconds()),
+        "-",
+        Math.random().toString(36).slice(2, 8).toUpperCase()
+      ].join("");
+    };
 
-                <div class="text-center">
-                    <button id="continue-to-app-btn" class="btn btn-primary px-8 py-3 rounded-lg font-semibold text-lg">Continue to Synthesizer</button>
-                </div>
-            </div>
-        </div>
+    const masteryFromPercent = (pct) => {
+      if (pct >= 90) return "mastered";
+      if (pct >= 80) return "proficient";
+      if (pct >= 60) return "developing";
+      return "novice";
+    };
 
-        <!-- Main App Workspace -->
-        <div id="main-app" class="hidden">
-            <div class="text-left mb-6">
-                 <button id="back-to-start-btn" class="font-semibold text-indigo-600 hover:text-indigo-800">← Back to Start</button>
-            </div>
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <h1 id="main-title" class="text-4xl font-bold">Personal Reality Framework (PRF) Synthesizer</h1>
-                <p class="text-gray-600 mt-2">Import your saved summaries from the explorers to begin.</p>
-            </div>
+    const masteryBadge = (level) => {
+      const map = {
+        mastered: { text: "⭐ Mastered", cls: "bg-blue-100 text-blue-800" },
+        proficient: { text: "✓ Proficient", cls: "bg-green-100 text-green-800" },
+        developing: { text: "🔄 Developing", cls: "bg-yellow-100 text-yellow-800" },
+        novice: { text: "⭕ Novice", cls: "bg-red-100 text-red-800" },
+        "not-started": { text: "⭕ Not Started", cls: "bg-gray-100 text-gray-700" }
+      };
+      return map[level] ?? map["not-started"];
+    };
 
-            <!-- Demo Status Banner -->
-            <div id="demo-status-banner" class="hidden card bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 text-center mb-6">
-                <p>You are currently viewing the interactive demo for: <strong id="demo-name-display"></strong>. Any edits or new file uploads will clear this demo.</p>
-            </div>
+    // ---------- Content Data ----------
+    const SECTIONS = [
+      { id: "intro", label: "Introduction", icon: "📚" },
+      { id: "phenomenology", label: "Phenomenology", icon: "🔎" },
+      { id: "pragmatism", label: "Pragmatism", icon: "🛠️" },
+      { id: "analytic", label: "Analytic / Language", icon: "🧠" },
+      { id: "mind", label: "Language & Mind", icon: "🗣️" },
+      { id: "studio", label: "Claim → Workflow Studio", icon: "🏗️" },
+      { id: "assessment", label: "Assessment", icon: "✅" },
+      { id: "completion", label: "Completion Doc", icon: "📄" }
+    ];
 
-            <!-- Main Workspace -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                <!-- Left Column: File Uploads -->
-                <div class="lg:col-span-1 space-y-6">
-                    <div class="card p-6">
-                        <h2 class="text-xl font-bold mb-4">1. Import Your Data</h2>
-                        <button id="load-data-btn" class="btn btn-primary w-full py-3 mb-4 rounded-lg font-semibold">Load Data from Explorers</button>
-                        <p class="text-center text-gray-500 text-sm mb-4">Or upload files manually below</p>
-                        <div class="space-y-4">
-                            <div id="beliefs-upload-box" class="upload-box"><button id="beliefs-clear-btn" class="clear-btn hidden">&times;</button><p class="font-semibold text-gray-700">Beliefs</p><input type="file" id="beliefs-file-input" class="hidden" accept=".txt"></div>
-                            <div id="rules-upload-box" class="upload-box"><button id="rules-clear-btn" class="clear-btn hidden">&times;</button><p class="font-semibold text-gray-700">Rules</p><input type="file" id="rules-file-input" class="hidden" accept=".txt"></div>
-                            <div id="ontology-upload-box" class="upload-box"><button id="ontology-clear-btn" class="clear-btn hidden">&times;</button><p class="font-semibold text-gray-700">Ontology</p><input type="file" id="ontology-file-input" class="hidden" accept=".txt"></div>
-                            <div id="authenticity-upload-box" class="upload-box"><button id="authenticity-clear-btn" class="clear-btn hidden">&times;</button><p class="font-semibold text-gray-700">Authenticity</p><input type="file" id="authenticity-file-input" class="hidden" accept=".txt"></div>
-                            <div id="assembly_history-upload-box" class="upload-box"><button id="assembly_history-clear-btn" class="clear-btn hidden">&times;</button><p class="font-semibold text-gray-700">Assembly History</p><input type="file" id="assembly_history-file-input" class="hidden" accept=".txt"></div>
-                            <div id="future_pull-upload-box" class="upload-box"><button id="future_pull-clear-btn" class="clear-btn hidden">&times;</button><p class="font-semibold text-gray-700">Future Pull</p><input type="file" id="future_pull-file-input" class="hidden" accept=".txt"></div>
-                        </div>
-                    </div>
-                </div>
+    const QUIZ = [
+      {
+        id: "q1",
+        prompt: "Phenomenology’s epoché primarily trains which capability?",
+        options: [
+          { id: "A", text: "Inventing new theories" },
+          { id: "B", text: "Bracketing assumptions to describe what is given", correct: true },
+          { id: "C", text: "Measuring behavioral consequences" },
+          { id: "D", text: "Formal proof construction" }
+        ],
+        explanation: "Epoché suspends presuppositions to describe the structures of experience."
+      },
+      {
+        id: "q2",
+        prompt: "Pragmatism’s definition of meaning focuses on:",
+        options: [
+          { id: "A", text: "The elegance of a proof" },
+          { id: "B", text: "The antiquity of a concept" },
+          { id: "C", text: "The practical bearings and consequences in inquiry", correct: true },
+          { id: "D", text: "The speaker’s intentions only" }
+        ],
+        explanation: "For pragmatists, meaning = practical consequences and use in inquiry."
+      },
+      {
+        id: "q3",
+        prompt: "Analytic philosophy’s ‘concept audit’ aims to:",
+        options: [
+          { id: "A", text: "Add more metaphors" },
+          { id: "B", text: "Uncover ambiguities and define decision rules", correct: true },
+          { id: "C", text: "Ignore ordinary language" },
+          { id: "D", text: "Replace experiments with introspection" }
+        ],
+        explanation: "Analytic methods clarify usage, surface ambiguities, and specify operational criteria."
+      },
+      {
+        id: "q4",
+        prompt: "In the ABCD lens, Beauty/Awe (B) matters because it:",
+        options: [
+          { id: "A", text: "Is merely decorative" },
+          { id: "B", text: "Creates salience and future-pull, making control layers visible", correct: true },
+          { id: "C", text: "Only applies to art" },
+          { id: "D", text: "Prevents disciplined reasoning" }
+        ],
+        explanation: "Beauty/Awe directs attention and motivates sustained engagement."
+      },
+      {
+        id: "q5",
+        prompt: "A ‘constructor’ in this module is best described as:",
+        options: [
+          { id: "A", text: "Any single person with expertise" },
+          { id: "B", text: "A system that repeatedly produces a transformation and maintains that ability", correct: true },
+          { id: "C", text: "A list of rules" },
+          { id: "D", text: "A one-off project" }
+        ],
+        explanation: "Constructors repeatedly yield reliable outcomes and preserve the capacity to do so."
+      },
+      {
+        id: "q6",
+        prompt: "The ‘Claim → Workflow Studio’ primarily operationalizes which tradition?",
+        options: [
+          { id: "A", text: "Only phenomenology" },
+          { id: "B", text: "Only analytic philosophy" },
+          { id: "C", text: "Only philosophy of mind" },
+          { id: "D", text: "A synthesis: concept audit + phenomenology + pragmatic testing", correct: true }
+        ],
+        explanation: "The studio integrates the three toolkits into a testable workflow."
+      }
+    ];
 
-                <!-- Right Column: Synthesis & Analysis -->
-                <div class="lg:col-span-2 space-y-6">
-                    <div class="card p-6">
-                        <h2 class="text-xl font-bold mb-4">2. Review & Edit Your Data</h2>
-                        <div id="review-grid" class="review-grid p-2 bg-gray-50 rounded-lg">
-                             <!-- Text areas will be dynamically created here -->
-                        </div>
-                    </div>
-                    <div class="card p-6">
-                        <h2 class="text-xl font-bold mb-4">3. Guided Synthesis</h2>
-                        
-                        <div id="chat-container" class="w-full h-96 flex flex-col border bg-white rounded-lg p-4">
-                            <div id="chat-history" class="flex-1 overflow-y-auto mb-4 flex flex-col">
-                                <!-- Chat messages will appear here -->
-                            </div>
-                            <div id="chat-input-area" class="flex items-center gap-2">
-                                <textarea id="chat-input" class="w-full border border-gray-300 rounded-lg p-2 resize-none" placeholder="Type your response..." rows="2" disabled></textarea>
-                                <button id="chat-send-btn" class="btn btn-primary px-6 py-2 rounded-lg font-semibold" disabled>Send</button>
-                            </div>
-                        </div>
+    // ---------- App ----------
+    function App() {
+      const [hasStarted, setHasStarted] = useState(false);
+      const [student, setStudent] = useState({ name: "", email: "", course: "" });
+      const [current, setCurrent] = useState("intro");
+      const [session, setSession] = useState({ id: "", startedAt: "", completedAt: "" });
 
-                        <div id="final-analysis-section" class="hidden mt-6">
-                             <button id="generate-analysis-btn" class="btn btn-primary w-full py-3 rounded-lg font-semibold flex items-center justify-center">
-                                <span id="analysis-btn-text">Generate Final AI Analysis</span>
-                                <div id="analysis-spinner" class="spinner hidden"></div>
-                            </button>
-                            <div id="final-analysis-display" class="hidden mt-4 w-full min-h-[100px] p-3 bg-gray-50 border rounded-lg whitespace-pre-wrap"></div>
-                        </div>
-                        
-                        <div class="mt-6 text-right">
-                            <button id="download-prf-btn" class="btn btn-primary px-8 py-3 rounded-lg font-semibold">Download Full PRF</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+      const [progress, setProgress] = useState(() => {
+        // per-section status and simple metrics
+        const base = {};
+        SECTIONS.forEach(s => base[s.id] = { status: "not-started", startedAt: null, endedAt: null, minutes: 0, interactions: 0 });
+        return base;
+      });
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Screen Elements ---
-            const startScreen = document.getElementById('start-screen');
-            const explanationScreen = document.getElementById('explanation-screen');
-            const mainApp = document.getElementById('main-app');
-            const mainTitle = document.getElementById('main-title');
-            const demoStatusBanner = document.getElementById('demo-status-banner');
-            const demoNameDisplay = document.getElementById('demo-name-display');
-            
-            // --- Button Elements ---
-            const startHereBtn = document.getElementById('start-here-btn');
-            const continueToAppBtn = document.getElementById('continue-to-app-btn');
-            const backToStartBtn = document.getElementById('back-to-start-btn');
-            const loadDataBtn = document.getElementById('load-data-btn');
-            const generateAnalysisBtn = document.getElementById('generate-analysis-btn');
+      // Phenomenology / Pragmatism / Analytic / Mind practice text
+      const [notes, setNotes] = useState({
+        pheno: "", prag: "", analytic: "", mind: ""
+      });
 
+      // Studio fields
+      const [studio, setStudio] = useState({
+        claim: "",
+        auditAmbiguities: "",
+        workingDefs: "",
+        phenoNote: "",
+        hypothesis: "",
+        consequences: "",
+        intervention: "",
+        ethics: "",
+        kpis: "",
+        pilotNotes: "",
+        abcdReflection: ""
+      });
 
-            // --- Main App Elements ---
-            const reviewGrid = document.getElementById('review-grid');
-            const downloadPrfBtn = document.getElementById('download-prf-btn');
-            const finalAnalysisSection = document.getElementById('final-analysis-section');
-            const finalAnalysisDisplay = document.getElementById('final-analysis-display');
-            const analysisBtnText = document.getElementById('analysis-btn-text');
-            const analysisSpinner = document.getElementById('analysis-spinner');
-            
-            // --- Chat Elements ---
-            const chatHistory = document.getElementById('chat-history');
-            const chatInput = document.getElementById('chat-input');
-            const chatSendBtn = document.getElementById('chat-send-btn');
+      // Quiz state
+      const [answers, setAnswers] = useState({});
+      const [quizSubmitted, setQuizSubmitted] = useState(false);
+      const [quizScore, setQuizScore] = useState(0);
 
-            const DATA_KEYS = {
-                beliefs: 'prf_beliefs_data',
-                rules: 'prf_rules_data',
-                ontology: 'prf_ontology_data',
-                authenticity: 'prf_authenticity_data',
-                assembly_history: 'prf_assembly_history_data',
-                future_pull: 'prf_future_pull_data'
-            };
+      // Load saved
+      useEffect(() => {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        try {
+          const saved = JSON.parse(raw);
+          if (saved) {
+            setHasStarted(!!saved.hasStarted);
+            setStudent(saved.student || { name: "", email: "", course: "" });
+            setCurrent(saved.current || "intro");
+            setSession(saved.session || { id: "", startedAt: "", completedAt: "" });
+            setProgress(saved.progress || progress);
+            setNotes(saved.notes || { pheno: "", prag: "", analytic: "", mind: "" });
+            setStudio(saved.studio || studio);
+            setAnswers(saved.answers || {});
+            setQuizSubmitted(!!saved.quizSubmitted);
+            setQuizScore(saved.quizScore || 0);
+          }
+        } catch (e) {}
+        // eslint-disable-next-line
+      }, []);
 
-            const CATEGORIES = Object.keys(DATA_KEYS);
-            const DEMO_NAME_KEY = 'prf_current_demo_name';
+      // Save
+      useEffect(() => {
+        const payload = { hasStarted, student, current, session, progress, notes, studio, answers, quizSubmitted, quizScore };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      }, [hasStarted, student, current, session, progress, notes, studio, answers, quizSubmitted, quizScore]);
 
-            // --- Screen Navigation ---
-            startHereBtn.addEventListener('click', () => { startScreen.classList.add('hidden'); explanationScreen.classList.remove('hidden'); });
-            continueToAppBtn.addEventListener('click', () => { explanationScreen.classList.add('hidden'); mainApp.classList.remove('hidden'); mainApp.classList.add('screen'); });
-            backToStartBtn.addEventListener('click', () => { mainApp.classList.add('hidden'); startScreen.classList.remove('hidden'); });
+      // Helpers
+      const begin = (info) => {
+        const id = generateSessionId();
+        const now = new Date().toISOString();
+        setStudent(info);
+        setHasStarted(true);
+        setSession({ id, startedAt: now, completedAt: "" });
+        markStarted("intro");
+      };
 
-            function hideDemoBanner() {
-                demoStatusBanner.classList.add('hidden');
-            }
-
-            // --- Dynamic Creation of Review Boxes ---
-            CATEGORIES.forEach(key => {
-                const formattedName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                const container = document.createElement('div');
-                container.className = 'review-box-container';
-                container.dataset.key = key;
-                const textarea = document.createElement('textarea');
-                textarea.id = `${key}-display`;
-                textarea.className = 'w-full h-full p-2 border rounded-md bg-white focus:ring-2 focus:ring-indigo-400 focus:outline-none';
-                textarea.placeholder = `${formattedName} data...`;
-                container.appendChild(textarea);
-                const expandBtn = document.createElement('button');
-                expandBtn.className = 'expand-btn';
-                expandBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-fullscreen" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z"/></svg>`;
-                expandBtn.title = `Focus on ${formattedName}`;
-                container.appendChild(expandBtn);
-                reviewGrid.appendChild(container);
-                expandBtn.addEventListener('click', () => {
-                    const isFocused = container.classList.contains('is-focused');
-                    reviewGrid.querySelectorAll('.review-box-container').forEach(c => c.classList.remove('is-focused'));
-                    if (isFocused) {
-                        reviewGrid.classList.remove('focused');
-                        expandBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-fullscreen" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z"/></svg>`;
-                        expandBtn.title = `Focus on ${formattedName}`;
-                    } else {
-                        reviewGrid.classList.add('focused');
-                        container.classList.add('is-focused');
-                        expandBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-fullscreen-exit" viewBox="0 0 16 16"><path d="M5.5 0a.5.5 0 0 1 .5.5v4A.5.5 0 0 1 5 5h-4a.5.5 0 0 1 0-1h3.5V.5a.5.5 0 0 1 .5-.5zM5 11h4a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1zm11-5.5a.5.5 0 0 1-1 0V1.5H11.5a.5.5 0 0 1 0-1H15a.5.5 0 0 1 .5.5v4zM11 11h3.5a.5.5 0 0 1 0 1H11a.5.5 0 0 1 0-1z"/></svg>`;
-                        expandBtn.title = `Return to Grid View`;
-                    }
-                });
-                textarea.addEventListener('input', hideDemoBanner);
-            });
-
-            // --- File Handling Logic ---
-            CATEGORIES.forEach(key => {
-                const uploadBox = document.getElementById(`${key}-upload-box`);
-                const fileInput = document.getElementById(`${key}-file-input`);
-                const clearBtn = document.getElementById(`${key}-clear-btn`);
-                const display = document.getElementById(`${key}-display`);
-                const handleFile = (file) => {
-                    hideDemoBanner();
-                    if (file && file.type === 'text/plain') {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const newContent = e.target.result;
-                            display.value = display.value.trim().length > 0 ? `${display.value}\n\n----------\n(New File: ${file.name})\n----------\n\n${newContent}` : newContent;
-                            uploadBox.classList.add('filled');
-                            clearBtn.classList.remove('hidden');
-                        };
-                        reader.readAsText(file);
-                    } else { alert('Please upload a valid .txt file.'); }
-                };
-                uploadBox.addEventListener('click', (e) => { if (e.target !== clearBtn) fileInput.click(); });
-                fileInput.addEventListener('change', (event) => handleFile(event.target.files[0], key));
-                uploadBox.addEventListener('dragover', (event) => { event.preventDefault(); uploadBox.classList.add('drag-over'); });
-                uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('drag-over'));
-                uploadBox.addEventListener('drop', (event) => { event.preventDefault(); uploadBox.classList.remove('drag-over'); handleFile(event.dataTransfer.files[0], key); });
-                clearBtn.addEventListener('click', () => {
-                    hideDemoBanner();
-                    display.value = '';
-                    uploadBox.classList.remove('filled');
-                    clearBtn.classList.add('hidden');
-                    fileInput.value = ''; 
-                });
-            });
-            
-            // --- Load Data from LocalStorage ---
-            loadDataBtn.addEventListener('click', () => {
-                let loadedCount = 0;
-                const demoName = localStorage.getItem(DEMO_NAME_KEY);
-                if (demoName) {
-                    demoNameDisplay.textContent = demoName;
-                    demoStatusBanner.classList.remove('hidden');
-                    localStorage.removeItem(DEMO_NAME_KEY);
-                } else { hideDemoBanner(); }
-                CATEGORIES.forEach(key => {
-                    const savedData = localStorage.getItem(DATA_KEYS[key]);
-                    if (savedData) {
-                        const display = document.getElementById(`${key}-display`);
-                        display.value = savedData;
-                        document.getElementById(`${key}-upload-box`).classList.add('filled');
-                        document.getElementById(`${key}-clear-btn`).classList.remove('hidden');
-                        loadedCount++;
-                    }
-                });
-                if (loadedCount > 0) { alert(`${loadedCount} data source(s) loaded successfully.`); } 
-                else { alert('No saved data found from the explorer apps in this browser.'); }
-            });
-
-            // --- Guided Synthesis (Chat) Logic ---
-            let conversationHistory = [];
-            let currentStep = 0;
-            const synthesisSteps = [ 'start', 'beliefs', 'rules', 'ontology', 'authenticity', 'assembly_history', 'future_pull', 'end' ];
-
-            function addMessage(text, sender) {
-                const messageDiv = document.createElement('div');
-                const role = (sender === 'user') ? 'user' : 'model';
-                messageDiv.className = `chat-message ${sender}-message`;
-                messageDiv.textContent = text;
-                chatHistory.appendChild(messageDiv);
-                chatHistory.scrollTop = chatHistory.scrollHeight;
-                conversationHistory.push({ role, parts: [{ text }] });
-            }
-            
-            function constructPrompt(step, fullHistoryText) {
-                const currentModule = synthesisSteps[step];
-                const previousModule = synthesisSteps[step - 1];
-                let allData = '';
-                CATEGORIES.forEach(key => {
-                    const formattedName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    allData += `--- ${formattedName} ---\n${document.getElementById(`${key}-display`).value || 'No data provided.'}\n\n`;
-                });
-
-                if (step === 1) { // First step after introduction
-                    return `You are an insightful and supportive philosophy tutor specializing in a framework that analyzes personal reality through Beliefs, Rules, Ontology, Authenticity, Assembly History, and Future Pull. Your goal is to help a student synthesize these components through a step-by-step conversation.
-                    
-                    **Your Task:** Begin the conversation by asking an insightful, open-ended question about their **Beliefs**. Your question should encourage them to identify the core of their belief system based on the text they provided.
-                    
-                    Here is all of the student's data for your reference:\n${allData}`;
-                } else {
-                     return `You are an insightful and supportive philosophy tutor continuing a guided synthesis conversation with a student about their Personal Reality Framework (PRF).
-                    
-                    **Conversation History So Far:**
-                    ${fullHistoryText}
-                    
-                    **Your Task:** Your next step is to guide the student to connect their reflections on **${previousModule.replace(/_/g, ' ')}** with their reflections on **${currentModule.replace(/_/g, ' ')}**.
-                    
-                    Please generate a response that does the following:
-                    1.  **Acknowledge and Validate:** Briefly and positively acknowledge the student's previous response.
-                    2.  **Synthesize and Connect:** Analyze the student's full data, find an interesting connection or a potential tension between the '${previousModule}' and '${currentModule}' sections.
-                    3.  **Ask a Probing Question:** Formulate an insightful, open-ended question that encourages the student to explore this connection or tension. Your question should prompt critical thinking, not a simple yes/no answer.
-                    
-                    Keep your tone encouraging and conversational.
-                    
-                    Here is all of the student's data for your reference:\n${allData}`;
-                }
-            }
-            
-            async function getAiResponse() {
-                chatInput.disabled = true;
-                chatSendBtn.disabled = true;
-                const thinkingMsg = document.createElement('div');
-                thinkingMsg.className = 'chat-message ai-message';
-                thinkingMsg.innerHTML = '<div class="spinner"></div>';
-                chatHistory.appendChild(thinkingMsg);
-                chatHistory.scrollTop = chatHistory.scrollHeight;
-
-                const fullHistoryText = conversationHistory.map(msg => `[${msg.role}]: ${msg.parts[0].text}`).join('\n');
-                const systemPrompt = constructPrompt(currentStep, fullHistoryText);
-                
-                // CORRECTED LOGIC: Create the payload with the correct alternating structure.
-                let conversationPayload;
-                if (currentStep === 1) { // This is the first turn. History is empty.
-                    conversationPayload = {
-                        contents: [{ role: 'user', parts: [{ text: systemPrompt }] }]
-                    };
-                } else { // This is a subsequent turn. History has messages.
-                    conversationPayload = {
-                        contents: [...conversationHistory.slice(0, -1), { role: 'user', parts: [{ text: conversationHistory[conversationHistory.length - 1].parts[0].text + "\n\n---SYSTEM INSTRUCTION---\n" + systemPrompt }] }]
-                    };
-                }
-
-                const apiUrl = '/.netlify/functions/ai-tutor';
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ conversationPayload })
-                    });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`API Error: ${response.status} - ${errorData.error || 'Unknown error'}`);
-                    }
-                    const result = await response.json();
-                    if (!result.candidates || result.candidates.length === 0) {
-                         throw new Error("No response from AI. The content may have been blocked.");
-                    }
-                    const aiText = result.candidates[0].content.parts[0].text;
-                    
-                    thinkingMsg.remove();
-                    addMessage(aiText, 'ai');
-
-                } catch (error) {
-                     thinkingMsg.remove();
-                     addMessage(`An error occurred: ${error.message}. Please check your connection or contact the administrator.`, 'ai');
-                } finally {
-                    if (currentStep < synthesisSteps.length -1) {
-                        chatInput.disabled = false;
-                        chatSendBtn.disabled = false;
-                        chatInput.focus();
-                    } else {
-                        finalAnalysisSection.classList.remove('hidden');
-                        addMessage("You have now completed the guided synthesis. You can now generate a final AI analysis of your entire framework.", 'ai');
-                    }
-                }
-            }
-            
-            chatSendBtn.addEventListener('click', () => {
-                const userText = chatInput.value.trim();
-                if (!userText) return;
-                
-                addMessage(userText, 'user');
-                chatInput.value = '';
-                currentStep++;
-                getAiResponse();
-            });
-
-            function initializeChat() {
-                chatHistory.innerHTML = '';
-                conversationHistory = [];
-                currentStep = 0;
-                finalAnalysisSection.classList.add('hidden');
-                finalAnalysisDisplay.classList.add('hidden');
-                finalAnalysisDisplay.textContent = '';
-
-
-                const hasData = CATEGORIES.some(key => document.getElementById(`${key}-display`).value.trim() !== '');
-                if (hasData) {
-                    currentStep = 1; 
-                    getAiResponse();
-                } else {
-                    addMessage("Please load or upload some data from your explorers before we can begin.", 'ai');
-                }
-            }
-
-            const startChatBtn = document.createElement('button');
-            startChatBtn.textContent = 'Begin Guided Synthesis';
-            startChatBtn.className = 'btn btn-primary mx-auto';
-            chatHistory.appendChild(startChatBtn);
-            startChatBtn.addEventListener('click', () => {
-                initializeChat();
-            });
-
-            generateAnalysisBtn.addEventListener('click', async () => {
-                analysisBtnText.classList.add('hidden');
-                analysisSpinner.classList.remove('hidden');
-                generateAnalysisBtn.disabled = true;
-
-                let allData = '';
-                CATEGORIES.forEach(key => {
-                    const formattedName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    allData += `--- ${formattedName} ---\n${document.getElementById(`${key}-display`).value || 'No data provided.'}\n\n`;
-                });
-                
-                const fullHistoryText = conversationHistory.map(msg => `[${msg.role}]: ${msg.parts[0].text}`).join('\n');
-
-
-                const finalPrompt = `You are a philosophy tutor specializing in a framework that analyzes personal reality through Beliefs, Rules, Ontology, Authenticity, Assembly History, and Future Pull. You have just completed a guided synthesis conversation with a student.
-                
-                **Your Task:**
-                Write a final, comprehensive analysis of the student's Personal Reality Framework. Your analysis MUST be formatted in four distinct sections, with the titles in bold:
-                
-                1.  **Key Themes:** Identify and describe 2-3 of the most important recurring ideas that connect the different parts of their framework.
-                2.  **Potential Tensions:** Identify 1-2 areas where their stated beliefs, rules, or goals might conflict or be in tension with each other, and frame them as thoughtful questions.
-                3.  **A Question for Deeper Synthesis:** Formulate one final, powerful, open-ended question that will challenge the student to think about their framework in a new way.
-                4.  **Voice and Platform Analysis:** Based on the theoretical framework provided below, analyze the student's "Voice Architecture" and their approach to "Platform Innovation."
-                
-                **Theoretical Framework for Voice and Platform Analysis:**
-                - **Voice:** The capacity to articulate one's Personal Reality Framework. Different "Voice Architectures" exist (e.g., individualistic, collective, scientific, spiritual, artistic).
-                - **Platform:** The institutional and social structures that provide opportunities for a voice to be heard. "Platform Innovation" or "Platform Creation" is when a person builds new structures to amplify voices, rather than just using existing ones.
-                - **Capability Development:** Analyze how the person's actions or framework helps develop the capabilities of themselves or others.
-                
-                **Student's Raw Data:**
-                ${allData}
-                
-                **Conversation Transcript:**
-                ${fullHistoryText}
-                `;
-                
-                const conversationPayload = {
-                    contents: [{ role: 'user', parts: [{ text: finalPrompt }] }]
-                };
-
-                 try {
-                    const apiUrl = '/.netlify/functions/ai-tutor';
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ conversationPayload }) 
-                    });
-                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`API Error: ${response.status} - ${errorData.error}`);
-                    }
-                    const result = await response.json();
-                     if (!result.candidates || result.candidates.length === 0) {
-                         throw new Error("No response from AI. The content may have been blocked.");
-                    }
-                    const aiText = result.candidates[0].content.parts[0].text;
-                    
-                    finalAnalysisDisplay.textContent = aiText;
-                    finalAnalysisDisplay.classList.remove('hidden');
-
-                } catch (error) {
-                     finalAnalysisDisplay.textContent = `An error occurred: ${error.message}. Please check your connection or contact the administrator.`;
-                     finalAnalysisDisplay.classList.remove('hidden');
-                } finally {
-                    analysisBtnText.classList.remove('hidden');
-                    analysisSpinner.classList.add('hidden');
-                    generateAnalysisBtn.disabled = false;
-                }
-            });
-
-            // --- Download Full PRF ---
-            downloadPrfBtn.addEventListener('click', () => {
-                let fullPrfText = "My Personal Reality Framework\n============================\n\n";
-                CATEGORIES.forEach(key => {
-                    const formattedName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    fullPrfText += `--- ${formattedName} ---\n` + (document.getElementById(`${key}-display`).value || "No data uploaded.") + "\n\n";
-                });
-                
-                if (conversationHistory.length > 0) {
-                    fullPrfText += "============================\n--- GUIDED SYNTHESIS CONVERSATION ---\n";
-                    const cleanHistory = conversationHistory.filter(msg => msg.role === 'user' || msg.role === 'model');
-                    cleanHistory.forEach(msg => {
-                        const sender = msg.role === 'user' ? 'Me' : 'AI Tutor';
-                        fullPrfText += `\n[${sender}]:\n${msg.parts[0].text}\n`;
-                    });
-                     fullPrfText += "\n\n";
-                }
-                
-                if (!finalAnalysisDisplay.classList.contains('hidden')) {
-                    fullPrfText += "============================\n--- FINAL AI ANALYSIS ---\n" + (finalAnalysisDisplay.textContent || "No analysis generated.") + "\n\n";
-                }
-
-                const blob = new Blob([fullPrfText], { type: 'text/plain;charset=utf-8' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'My-Personal-Reality-Framework.txt';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
+      const markStarted = (sec) => {
+        setProgress(prev => {
+          const p = { ...prev };
+          if (p[sec].status === "not-started") {
+            p[sec].status = "in-progress";
+            p[sec].startedAt = new Date().toISOString();
+          }
+          p[sec].interactions += 1;
+          return p;
         });
-    </script>
+      };
+
+      const markDone = (sec, level="proficient") => {
+        setProgress(prev => {
+          const p = { ...prev };
+          const start = p[sec].startedAt ? new Date(p[sec].startedAt) : new Date();
+          const end = new Date();
+          const mins = Math.max(1, Math.round((end - start)/60000));
+          p[sec].endedAt = end.toISOString();
+          p[sec].minutes += mins;
+          p[sec].status = level;
+          return p;
+        });
+      };
+
+      const goto = (sec) => {
+        setCurrent(sec);
+        markStarted(sec);
+      };
+
+      const resetAll = () => {
+        if (!confirm("This will clear all saved progress for Part 12. Continue?")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.reload();
+      };
+
+      const calcCourseProgress = () => {
+        const total = SECTIONS.length;
+        const done = Object.values(progress).filter(p => ["proficient","mastered","developing"].includes(p.status)).length;
+        return Math.round((done/total)*100);
+      };
+
+      const submitQuiz = () => {
+        let correct = 0;
+        QUIZ.forEach(q => {
+          const right = q.options.find(o => o.correct)?.id;
+          if (answers[q.id] === right) correct += 1;
+        });
+        const pct = Math.round((correct / QUIZ.length) * 100);
+        setQuizScore(pct);
+        setQuizSubmitted(true);
+        markDone("assessment", masteryFromPercent(pct));
+        setSession(s => ({ ...s, completedAt: new Date().toISOString() }));
+      };
+
+      const completionText = () => {
+        const pct = calcCourseProgress();
+        const mastery = masteryFromPercent(quizScore || 0);
+        const lines = [];
+        lines.push("═══════════════════════════════════════════════════════");
+        lines.push("PART 12: 20th-Century Turns — Completion Document");
+        lines.push("═══════════════════════════════════════════════════════");
+        lines.push(`Student: ${student.name}  •  ${student.email}  •  ${student.course}`);
+        lines.push(`Session: ${session.id}`);
+        lines.push(`Started: ${session.startedAt}`);
+        lines.push(`Completed: ${session.completedAt || "(in progress)"}`);
+        lines.push("");
+        lines.push(`Course Progress: ${pct}%`);
+        lines.push(`Assessment Score: ${quizScore}%  →  Mastery: ${mastery.toUpperCase()}`);
+        lines.push("");
+        lines.push("Section Status:");
+        SECTIONS.forEach(s => {
+          const st = progress[s.id];
+          lines.push(` - ${s.label}: ${st.status} (${st.minutes} min, interactions: ${st.interactions})`);
+        });
+        lines.push("");
+        lines.push("Studio Summary:");
+        lines.push(`  Claim: ${studio.claim}`);
+        lines.push(`  Working Definitions: ${studio.workingDefs}`);
+        lines.push(`  Hypothesis: ${studio.hypothesis}`);
+        lines.push(`  Consequences: ${studio.consequences}`);
+        lines.push(`  Intervention: ${studio.intervention}`);
+        lines.push(`  Ethics: ${studio.ethics}`);
+        lines.push(`  KPIs: ${studio.kpis}`);
+        lines.push(`  Pilot Notes: ${studio.pilotNotes}`);
+        lines.push(`  ABCD Reflection: ${studio.abcdReflection}`);
+        lines.push("");
+        lines.push("This document was auto-generated by the Part 12 web module.");
+        return lines.join("\n");
+      };
+
+      const downloadCompletion = () => {
+        const blob = new Blob([completionText()], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Part12-Completion-${(student.name||"student").replace(/\s+/g,"_")}.txt`;
+        a.click();
+      };
+
+      // ---------- UI ----------
+      if (!hasStarted) return (
+        <Welcome onBegin={begin} />
+      );
+
+      const pct = calcCourseProgress();
+
+      return (
+        <div className="min-h-screen">
+          {/* Header */}
+          <header className="gradient-header text-white">
+            <div className="max-w-7xl mx-auto px-4 py-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-3xl font-extrabold">Part 12 — 20th-Century Turns</h1>
+                  <p className="text-white/90">Phenomenology • Pragmatism • Analytic • Language & Mind</p>
+                  <div className="mt-4 bg-white/20 rounded-full h-2 overflow-hidden">
+                    <div className="progress-bar bg-white h-full" style={{ width: pct + "%" }}></div>
+                  </div>
+                  <p className="text-sm mt-2 text-white/90">{pct}% complete</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={resetAll} className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Nav */}
+          <nav className="bg-white shadow-sm sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex overflow-x-auto py-3 gap-2">
+                {SECTIONS.map(sec => {
+                  const st = progress[sec.id]?.status || "not-started";
+                  const badge = masteryBadge(st);
+                  const isCurrent = current === sec.id;
+                  return (
+                    <button key={sec.id} onClick={() => goto(sec.id)}
+                      className={"px-4 py-2 rounded-lg border text-sm flex items-center gap-2 whitespace-nowrap " +
+                        (isCurrent ? "bg-indigo-50 border-indigo-300 text-indigo-800"
+                                   : "hover:bg-gray-50 border-gray-200 text-gray-700")}>
+                      <span>{sec.icon}</span>
+                      <span>{sec.label}</span>
+                      <span className={"px-2 py-0.5 rounded-full " + badge.cls}>{badge.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </nav>
+
+          {/* Content */}
+          <main className="max-w-7xl mx-auto px-4 py-8">
+            {current === "intro" && (
+              <Intro onNext={() => { markDone("intro","proficient"); goto("phenomenology"); }} />
+            )}
+
+            {current === "phenomenology" && (
+              <Panel
+                title="I. Phenomenology — Back to the Things Themselves"
+                color="blue"
+                body={
+                  <>
+                    <p className="text-gray-700 mb-4">
+                      Phenomenology trains disciplined description of experience: <strong>epoché</strong> (bracketing),
+                      <strong> intentionality</strong> (aboutness), embodiment, and the lifeworld.
+                      Describe structures as they show themselves—before theorizing.
+                    </p>
+                    <ul className="list-disc list-inside text-gray-700 mb-4">
+                      <li><strong>Capacity:</strong> attentional awareness.</li>
+                      <li><strong>Capability:</strong> field-notes that track figure/ground, affordances, anticipations.</li>
+                      <li><strong>Constructor:</strong> studio routines that repeatedly yield faithful descriptions.</li>
+                      <li><strong>Meta-constructor:</strong> peer critique that improves descriptive norms.</li>
+                    </ul>
+                    <p className="text-gray-700">
+                      <strong>Mini-practice:</strong> Observe a mug for 2 minutes. Write 150–200 words on
+                      figure/ground, affordances, anticipations. No theory terms—just structures.
+                    </p>
+                  </>
+                }
+                noteValue={notes.pheno}
+                onNoteChange={(v) => setNotes(n => ({...n, pheno: v}))}
+                onComplete={() => { markDone("phenomenology", "proficient"); goto("pragmatism"); }}
+              />
+            )}
+
+            {current === "pragmatism" && (
+              <Panel
+                title="II. Pragmatism — Inquiry as Problem-Solving"
+                color="green"
+                body={
+                  <>
+                    <p className="text-gray-700 mb-4">
+                      Pragmatism treats ideas as tools. Frame a problem, form a hypothesis,
+                      specify consequences, run a small intervention, and iterate.
+                    </p>
+                    <ul className="list-disc list-inside text-gray-700 mb-4">
+                      <li><strong>Capacity:</strong> adaptive experimentation.</li>
+                      <li><strong>Capability:</strong> hypothesis-to-test mapping.</li>
+                      <li><strong>Constructor:</strong> lab/classroom cycles that produce reliable improvements.</li>
+                      <li><strong>Meta-constructor:</strong> communities of inquiry that refine standards.</li>
+                    </ul>
+                    <p className="text-gray-700">
+                      <strong>Mini-practice:</strong> Convert “Office hours don’t help” into
+                      Problem → Hypothesis → Consequence tests → Small intervention.
+                    </p>
+                  </>
+                }
+                noteValue={notes.prag}
+                onNoteChange={(v) => setNotes(n => ({...n, prag: v}))}
+                onComplete={() => { markDone("pragmatism", "proficient"); goto("analytic"); }}
+              />
+            )}
+
+            {current === "analytic" && (
+              <Panel
+                title="III. Analytic Philosophy — Language, Logic, Conceptual Engineering"
+                color="purple"
+                body={
+                  <>
+                    <p className="text-gray-700 mb-4">
+                      Make meanings explicit: conduct a <strong>concept audit</strong>, define terms operationally,
+                      and sketch models. Use ordinary-language sensitivity or formal tools to prevent confusion.
+                    </p>
+                    <ul className="list-disc list-inside text-gray-700 mb-4">
+                      <li>Uncover ambiguities and hidden presuppositions.</li>
+                      <li>Specify decision rules that would settle a dispute.</li>
+                      <li>Use counterexamples to stress-test a claim.</li>
+                    </ul>
+                    <p className="text-gray-700">
+                      <strong>Mini-practice:</strong> Take “Free speech is absolute.” Provide 3 disambiguations of
+                      “absolute,” 2 test cases, then a revised claim with explicit scope and decision rule.
+                    </p>
+                  </>
+                }
+                noteValue={notes.analytic}
+                onNoteChange={(v) => setNotes(n => ({...n, analytic: v}))}
+                onComplete={() => { markDone("analytic", "proficient"); goto("mind"); }}
+              />
+            )}
+
+            {current === "mind" && (
+              <Panel
+                title="IV. Language & Mind — Roles, Models, Context"
+                color="indigo"
+                body={
+                  <>
+                    <p className="text-gray-700 mb-4">
+                      From behaviorism to functionalism to enactive hints: model mental states by the roles they play
+                      in input–state–output systems, while attending to context and embodiment.
+                    </p>
+                    <ul className="list-disc list-inside text-gray-700 mb-4">
+                      <li>Box-and-arrow modeling (belief/desire → predicted behavior).</li>
+                      <li>Context switches as tests (sleep deprivation, group study).</li>
+                      <li>Use mispredictions to refine the model.</li>
+                    </ul>
+                    <p className="text-gray-700">
+                      <strong>Mini-practice:</strong> Model “Student intends to pass the course.” Add two context
+                      switches and predict behavior changes.
+                    </p>
+                  </>
+                }
+                noteValue={notes.mind}
+                onNoteChange={(v) => setNotes(n => ({...n, mind: v}))}
+                onComplete={() => { markDone("mind", "proficient"); goto("studio"); }}
+              />
+            )}
+
+            {current === "studio" && (
+              <Studio
+                value={studio}
+                onChange={setStudio}
+                onComplete={() => { markDone("studio","mastered"); goto("assessment"); }}
+                onDownloadPlan={() => {
+                  const txt =
+`Claim → Workflow (Part 12)
+
+Claim:
+${studio.claim}
+
+Concept Audit — Ambiguities:
+${studio.auditAmbiguities}
+
+Working Definitions:
+${studio.workingDefs}
+
+Phenomenology Field-Note:
+${studio.phenoNote}
+
+Hypothesis:
+${studio.hypothesis}
+
+Observable Consequences:
+${studio.consequences}
+
+Intervention Plan:
+${studio.intervention}
+
+Ethics & Context Check:
+${studio.ethics}
+
+KPIs:
+${studio.kpis}
+
+Pilot Notes:
+${studio.pilotNotes}
+
+ABCD Reflection:
+${studio.abcdReflection}
+`;
+                  const blob = new Blob([txt], { type: "text/plain" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "Part12-Claim-to-Workflow.txt";
+                  a.click();
+                }}
+              />
+            )}
+
+            {current === "assessment" && (
+              <Assessment
+                quiz={QUIZ}
+                answers={answers}
+                onAnswer={(qid, optId) => setAnswers(prev => ({ ...prev, [qid]: optId }))}
+                onSubmit={submitQuiz}
+                submitted={quizSubmitted}
+                score={quizScore}
+                onNext={() => goto("completion")}
+              />
+            )}
+
+            {current === "completion" && (
+              <Completion
+                student={student}
+                session={session}
+                progress={progress}
+                score={quizScore}
+                onDownload={downloadCompletion}
+                docText={completionText()}
+              />
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    // ---------- Components ----------
+    function Welcome({ onBegin }) {
+      const [form, setForm] = useState({ name: "", email: "", course: "" });
+      const ready = form.name && form.email && form.course;
+      return (
+        <div className="min-h-screen gradient-header text-white">
+          <div className="max-w-3xl mx-auto px-4 py-12">
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-8 shadow-xl">
+              <h1 className="text-3xl font-extrabold mb-2">Part 12 — 20th-Century Turns</h1>
+              <p className="text-white/90 mb-6">Phenomenology • Pragmatism • Analytic • Language & Mind</p>
+              <div className="bg-white rounded-xl text-gray-800 p-6">
+                <h2 className="text-xl font-bold mb-3">Orientation</h2>
+                <p className="mb-3">This module treats three families of practice as toolkits:
+                  <strong> phenomenology</strong> (disciplined description),
+                  <strong> pragmatism</strong> (inquiry cycles), and
+                  <strong> analytic philosophy</strong> (conceptual engineering),
+                  plus <strong>language & mind</strong> modeling.
+                </p>
+                <p className="mb-3">You’ll produce small artifacts and a reusable
+                  <em> Claim → Workflow</em> plan that turns philosophical claims into testable inquiries.
+                </p>
+              </div>
+
+              <form className="mt-6 grid md:grid-cols-3 gap-3"
+                    onSubmit={(e) => { e.preventDefault(); if (ready) onBegin(form); }}>
+                <input className="px-4 py-2 rounded-md text-gray-900" placeholder="Full Name"
+                       value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
+                <input className="px-4 py-2 rounded-md text-gray-900" placeholder="Email"
+                       value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} />
+                <input className="px-4 py-2 rounded-md text-gray-900" placeholder="Course/Section"
+                       value={form.course} onChange={e => setForm(f => ({...f, course: e.target.value}))} />
+                <button type="submit"
+                        className={"md:col-span-3 mt-2 px-4 py-2 rounded-md font-semibold " + (ready ? "bg-white text-indigo-700 hover:bg-indigo-50" : "bg-white/50 text-white/70 cursor-not-allowed")}>
+                  Begin Part 12 →
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function Panel({ title, color, body, noteValue, onNoteChange, onComplete }) {
+      const colorBox = {
+        blue: "border-blue-200 bg-blue-50",
+        green: "border-green-200 bg-green-50",
+        purple: "border-purple-200 bg-purple-50",
+        indigo: "border-indigo-200 bg-indigo-50"
+      }[color] || "border-gray-200 bg-gray-50";
+
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
+          <div className={"rounded-lg border p-4 mb-4 " + colorBox}>
+            {body}
+          </div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Your practice note (min 120 chars):</label>
+          <textarea rows="6" className="w-full border rounded-md p-3"
+                    placeholder="Write your field-note / plan / model sketch here..."
+                    value={noteValue}
+                    onChange={(e) => onNoteChange(e.target.value)} />
+          <div className="mt-3 flex justify-end">
+            <button
+              onClick={() => onComplete()}
+              disabled={(noteValue||"").trim().length < 120}
+              className={"px-4 py-2 rounded-md font-semibold " + ((noteValue||"").trim().length >= 120 ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-500 cursor-not-allowed")}>
+              Mark Complete & Continue →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function Studio({ value, onChange, onComplete, onDownloadPlan }) {
+      const set = (k, v) => onChange({ ...value, [k]: v });
+      const fields = [
+        { id: "claim", label: "Step 0 — Claim (single sentence you care about)" },
+        { id: "auditAmbiguities", label: "Step 1 — Concept Audit: Ambiguities & Presuppositions (list 2–3)" },
+        { id: "workingDefs", label: "Step 1 — Working Definitions (bullet 2–3 you will use THIS run)" },
+        { id: "phenoNote", label: "Step 2 — Phenomenology Field-Note (120–150 words, no theory terms)" },
+        { id: "hypothesis", label: "Step 3 — Hypothesis (If claim true, we should observe…)" },
+        { id: "consequences", label: "Step 3 — Observable Consequences (at least one behavioral, one attentional)" },
+        { id: "intervention", label: "Step 3 — Minimal Intervention Plan (pilotable in class)" },
+        { id: "ethics", label: "Step 4 — Context & Ethics Check (accessibility, risk, fairness)" },
+        { id: "kpis", label: "Step 5 — KPIs (fit-for-purpose indicators, thresholds)" },
+        { id: "pilotNotes", label: "Step 6 — Pilot Notes (anomalies, surprises, design changes)" },
+        { id: "abcdReflection", label: "Step 7 — ABCD Reflection (Agency, Beauty/Awe, Context, Dynamics)" }
+      ];
+
+      const ready = value.claim && value.workingDefs && value.hypothesis && value.consequences && value.intervention && value.kpis;
+
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">V. Claim → Workflow Studio</h2>
+          <p className="text-gray-700 mb-4">
+            Turn a philosophical claim into a testable inquiry workflow by chaining concept audit, phenomenology, and pragmatic testing.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {fields.map(f => (
+              <div key={f.id} className="border rounded-lg p-3 bg-gray-50">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{f.label}</label>
+                <textarea rows="6" className="w-full border rounded-md p-2"
+                  value={value[f.id]} onChange={(e) => set(f.id, e.target.value)} />
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-col md:flex-row gap-3 justify-end">
+            <button onClick={onDownloadPlan} className="px-4 py-2 rounded-md bg-white border text-gray-700 hover:bg-gray-50">
+              ⬇️ Download Plan (.txt)
+            </button>
+            <button
+              onClick={onComplete}
+              disabled={!ready}
+              className={"px-4 py-2 rounded-md font-semibold " + (ready ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-500 cursor-not-allowed")}>
+              Mark Studio Complete & Continue →
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function Assessment({ quiz, answers, onAnswer, onSubmit, submitted, score, onNext }) {
+      const allAnswered = quiz.every(q => !!answers[q.id]);
+
+      return (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">VI. Assessment</h2>
+          <p className="text-gray-700 mb-6">Answer the questions below. Immediate explanations appear after submit.</p>
+
+          <div className="space-y-6">
+            {quiz.map((q, idx) => {
+              const selected = answers[q.id];
+              const right = q.options.find(o => o.correct)?.id;
+              return (
+                <div key={q.id} className="border rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Q{idx+1}. {q.prompt}</h3>
+                  <div className="grid gap-2">
+                    {q.options.map(opt => {
+                      const isChosen = selected === opt.id;
+                      const isCorrect = !!opt.correct;
+                      const base = "text-left w-full border rounded-md p-3";
+                      let cls = "border-gray-300 hover:bg-gray-50";
+                      if (submitted && isChosen && isCorrect) cls = "border-green-500 bg-green-50";
+                      if (submitted && isChosen && !isCorrect) cls = "border-red-500 bg-red-50";
+                      if (submitted && !isChosen && isCorrect) cls = "border-green-400 bg-green-50";
+                      return (
+                        <button key={opt.id}
+                          disabled={submitted}
+                          onClick={() => onAnswer(q.id, opt.id)}
+                          className={`${base} ${cls}`}>
+                          <span className="font-bold mr-2">{opt.id}.</span>{opt.text}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {submitted && (
+                    <div className={"mt-3 p-3 rounded-md " + (answers[q.id] === right ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200")}>
+                      <p className="text-sm text-gray-800"><strong>Explanation:</strong> {q.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {!submitted ? (
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={onSubmit}
+                disabled={!allAnswered}
+                className={"px-4 py-2 rounded-md font-semibold " + (allAnswered ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-500 cursor-not-allowed")}>
+                Submit Assessment
+              </button>
+            </div>
+          ) : (
+            <div className="mt-6 flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <div>
+                <p className="text-indigo-900 font-semibold">Your score: {score}%</p>
+                <p className="text-indigo-800 text-sm">Mastery: {masteryFromPercent(score)}</p>
+              </div>
+              <button onClick={onNext} className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+                View Completion Doc →
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function Completion({ student, session, progress, score, onDownload, docText }) {
+      const totalMin = Object.values(progress).reduce((acc, s) => acc + (s.minutes||0), 0);
+      const mastery = masteryFromPercent(score);
+      return (
+        <div id="printable" className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">VII. Completion Document</h2>
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="text-gray-500 text-sm">Student</div>
+              <div className="font-semibold">{student.name}</div>
+              <div className="text-sm text-gray-700">{student.email}</div>
+              <div className="text-sm text-gray-700">{student.course}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="text-gray-500 text-sm">Session</div>
+              <div className="text-sm text-gray-700">ID: {session.id}</div>
+              <div className="text-sm text-gray-700">Start: {session.startedAt}</div>
+              <div className="text-sm text-gray-700">Complete: {session.completedAt || "(in progress)"}</div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="text-gray-500 text-sm">Summary</div>
+              <div className="text-sm text-gray-700">Assessment: <strong>{score}%</strong></div>
+              <div className="text-sm text-gray-700">Mastery: <strong>{mastery}</strong></div>
+              <div className="text-sm text-gray-700">Time on task: <strong>{totalMin} min</strong></div>
+            </div>
+          </div>
+
+          <div className="overflow-auto border rounded-lg">
+            <pre className="whitespace-pre-wrap text-sm p-4">{docText}</pre>
+          </div>
+
+          <div className="mt-4 flex flex-col md:flex-row gap-3 justify-end">
+            <button onClick={onDownload} className="px-4 py-2 rounded-md bg-white border text-gray-700 hover:bg-gray-50">
+              ⬇️ Download (.txt)
+            </button>
+            <button onClick={() => window.print()} className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+              🖨️ Print
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ---------- Mount ----------
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
 </body>
 </html>
-
